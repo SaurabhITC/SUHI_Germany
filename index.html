@@ -1,0 +1,1708 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Germany SUHI Dashboard</title>
+
+  <!-- Cesium CDN -->
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.121/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.121/Build/Cesium/Cesium.js"></script>
+
+  <style>
+    :root{
+      --frame-pad: 10px;
+      --frame-r: 18px;
+
+      --header-h: 80px;
+      --toolbar-h: 54px;
+      --footer-h: 30px;
+
+      --left-w: 310px;
+    }
+
+    /* ========= THEME TOKENS ========= */
+    html[data-theme="dark"]{
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.68);
+
+      --stroke: rgba(255,255,255,0.10);
+      --strokeSoft: rgba(120,180,255,0.16);
+      --glow: rgba(58,160,255,0.18);
+
+      --cardBg: rgba(12, 18, 40, 0.62);
+      --cardBg2: rgba(10, 14, 30, 0.42);
+
+      --headerBg: linear-gradient(180deg, rgba(18,28,70,0.70), rgba(10,14,32,0.35));
+      --toolbarBg: rgba(5,8,18,0.35);
+      --panelBg: rgba(6,8,18,0.34);
+      --frameBg: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+
+      --btnBg: rgba(7,10,22,0.55);
+      --btnBorder: rgba(120,180,255,0.20);
+      --btnHoverBorder: rgba(58,160,255,0.55);
+
+      --pageBg:
+        radial-gradient(1200px 600px at 15% 10%, rgba(58,160,255,0.18), transparent 60%),
+        radial-gradient(900px 500px at 85% 15%, rgba(33,208,122,0.10), transparent 60%),
+        radial-gradient(1200px 900px at 60% 90%, rgba(90,130,255,0.10), transparent 60%),
+        linear-gradient(180deg, #0a1230, #060914 70%);
+
+      /* Chat */
+      --chatUser: rgba(58,160,255,0.18);
+      --chatBot: rgba(255,255,255,0.06);
+      --chatInput: rgba(0,0,0,0.18);
+
+      /* Switch / Layer panel */
+      --switchOn: rgba(33,208,122,0.95);
+      --switchOff: rgba(255,255,255,0.16);
+      --switchKnob: rgba(255,255,255,0.95);
+      --sectionTitle: rgba(72, 210, 205, 0.85);
+      --legendBg: rgba(0,0,0,0.16);
+    }
+
+    html[data-theme="light"]{
+      --text: rgba(12,18,30,0.92);
+      --muted: rgba(12,18,30,0.62);
+
+      --stroke: rgba(12,18,30,0.12);
+      --strokeSoft: rgba(40,100,200,0.18);
+      --glow: rgba(40,100,200,0.14);
+
+      --cardBg: rgba(250,246,238,0.90);
+      --cardBg2: rgba(250,246,238,0.70);
+
+      --headerBg: linear-gradient(180deg, rgba(246,241,232,0.92), rgba(239,230,215,0.78));
+      --toolbarBg: rgba(246,241,232,0.72);
+      --panelBg: rgba(246,241,232,0.60);
+      --frameBg: linear-gradient(180deg, rgba(250,246,238,0.92), rgba(239,230,215,0.74));
+
+      --btnBg: rgba(250,246,238,0.86);
+      --btnBorder: rgba(12,18,30,0.14);
+      --btnHoverBorder: rgba(40,100,200,0.45);
+
+      --pageBg:
+        radial-gradient(1100px 520px at 15% 10%, rgba(40,100,200,0.08), transparent 60%),
+        radial-gradient(900px 500px at 85% 18%, rgba(30,160,120,0.06), transparent 60%),
+        linear-gradient(180deg, #f6f1e8, #efe6d7 70%);
+
+      /* Chat */
+      --chatUser: rgba(40,100,200,0.12);
+      --chatBot: rgba(12,18,30,0.06);
+      --chatInput: rgba(12,18,30,0.06);
+
+      /* Switch / Layer panel */
+      --switchOn: rgba(33,208,122,0.95);
+      --switchOff: rgba(12,18,30,0.18);
+      --switchKnob: rgba(255,255,255,0.98);
+      --sectionTitle: rgba(10, 140, 150, 0.85);
+      --legendBg: rgba(12,18,30,0.06);
+    }
+
+    html, body{
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      font-family: system-ui, Segoe UI, Roboto, Arial;
+      color: var(--text);
+      background: var(--pageBg);
+    }
+
+    #appFrame{
+      position: fixed;
+      inset: var(--frame-pad);
+      border-radius: var(--frame-r);
+      overflow: hidden;
+      border: 1px solid var(--stroke);
+      background: var(--frameBg);
+      box-shadow:
+        0 18px 55px rgba(0,0,0,0.22),
+        0 0 0 1px rgba(255,255,255,0.05) inset;
+    }
+
+    /* ===== Header ===== */
+    #header{
+      height: var(--header-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      gap: 12px;
+      background: var(--headerBg);
+      border-bottom: 1px solid rgba(255,255,255,0.00);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .titlePill{
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: var(--cardBg2);
+      border: 1px solid var(--strokeSoft);
+      box-shadow:
+        0 10px 22px rgba(0,0,0,0.14),
+        0 0 0 1px rgba(255,255,255,0.05) inset;
+      max-width: 860px;
+      min-width: 360px;
+    }
+
+    .pillTopRow{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .statusDot{
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #21d07a;
+      box-shadow: 0 0 0 5px rgba(33,208,122,0.10);
+      flex: 0 0 auto;
+    }
+
+    .pillTitle{
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 0.2px;
+      line-height: 1.15;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
+    }
+
+    .pillSub{
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.15;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    /* ===== Logo ===== */
+    #header .logo{
+      flex: 0 0 150px;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0;
+      margin: 0;
+      background: transparent;
+      border: none;
+      box-shadow: none;
+    }
+
+    #header .logoImg{
+      max-height: calc(var(--header-h) - 20px);
+      height: auto;
+      width: auto;
+      max-width: 150px;
+      display: block;
+      object-fit: contain;
+      border-radius: 0;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+    }
+
+    /* ===== Toolbar ===== */
+    #toolbar{
+      height: var(--toolbar-h);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 14px;
+      background: var(--toolbarBg);
+      border-bottom: 1px solid var(--stroke);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .pill{
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: var(--cardBg2);
+      border: 1px solid var(--strokeSoft);
+      box-shadow:
+        0 10px 26px rgba(0,0,0,0.12),
+        0 0 0 1px rgba(255,255,255,0.05) inset;
+      color: var(--text);
+    }
+
+    /* ===== City/Year segmented-pill controls ===== */
+    .pill-select{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:6px 10px;
+      border:1px solid var(--strokeSoft);
+      border-radius:999px;
+      background: var(--cardBg2);
+      box-shadow:
+        0 10px 26px rgba(0,0,0,0.12),
+        0 0 0 1px rgba(255,255,255,0.05) inset;
+      color: var(--text);
+    }
+
+    .pill-label{
+      font-size:12px;
+      color: var(--muted);
+      padding:0 6px;
+      white-space:nowrap;
+      user-select:none;
+    }
+
+    .segmented{
+      display:flex;
+      gap:2px;
+      padding:2px;
+      border-radius:999px;
+      border:1px solid var(--stroke);
+      background: rgba(0,0,0,0.06);
+    }
+    html[data-theme="light"] .segmented{
+      background: rgba(12,18,30,0.05);
+    }
+
+    .seg-btn{
+      border:0;
+      background:transparent;
+      padding:6px 10px;
+      border-radius:999px;
+      font-size:12px;
+      cursor:pointer;
+      color: var(--text);
+      line-height:1;
+      user-select:none;
+    }
+
+    .seg-btn.active{
+      background: var(--cardBg);
+      border:1px solid var(--stroke);
+      box-shadow: 0 1px 1px rgba(0,0,0,.10);
+    }
+
+    .seg-btn:focus-visible{
+      outline:2px solid var(--btnHoverBorder);
+      outline-offset:2px;
+    }
+
+    .themeToggle{
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      margin-left: auto;
+    }
+
+    /* ===== Layout ===== */
+    #content{
+      height: calc(100% - var(--header-h) - var(--toolbar-h) - var(--footer-h));
+      display: flex;
+      min-height: 0;
+    }
+
+    #leftPanel{
+      width: var(--left-w);
+      padding: 12px;
+      box-sizing: border-box;
+      overflow: auto;
+      background: var(--panelBg);
+      border-right: 1px solid var(--stroke);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    #leftPanel .panelHeader{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    #leftPanel .panelHeader .h{
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: 0.2px;
+    }
+    #leftPanel .panelHeader .dot{
+      width: 10px; height: 10px; border-radius: 50%;
+      background: #21d07a;
+      box-shadow: 0 0 0 5px rgba(33,208,122,0.12);
+    }
+
+    /* Hide the left panel scrollbar (but keep scrolling working) */
+    #leftPanel{
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    #leftPanel::-webkit-scrollbar{
+      width: 0;
+      height: 0;
+    }
+
+    .card{
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 10px;
+      background: var(--cardBg);
+      border: 1px solid var(--stroke);
+      box-shadow:
+        0 16px 40px rgba(0,0,0,0.14),
+        0 0 0 1px rgba(255,255,255,0.05) inset;
+    }
+    .card .ct{
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .empty{
+      height: 240px;
+      border-radius: 12px;
+      border: 1px dashed var(--strokeSoft);
+      background: rgba(0,0,0,0.03);
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-size: 12px;
+      text-align: center;
+      padding: 12px;
+    }
+    html[data-theme="light"] .empty{
+      background: rgba(250,246,238,0.55);
+    }
+
+    #mapArea{
+      position: relative;
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+    }
+    #cesiumContainer{
+      position: absolute;
+      inset: 0;
+    }
+
+    #footer{
+      height: var(--footer-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      border-top: 1px solid var(--stroke);
+      background: var(--toolbarBg);
+      color: var(--muted);
+      font-size: 12px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    /* Move Cesium bottom UI down a bit */
+    .cesium-viewer-bottom{ bottom: 6px !important; }
+
+    /* ===== Cesium Credits: shrink + fade (keep) ===== */
+    .cesium-widget-credits{
+      background: rgba(0,0,0,0.20) !important;
+      border-radius: 10px !important;
+      padding: 4px 8px !important;
+      border: 1px solid rgba(255,255,255,0.08) !important;
+      backdrop-filter: blur(8px) !important;
+
+      transform: scale(0.78);
+      transform-origin: left bottom;
+      opacity: 0.55;
+    }
+    html[data-theme="light"] .cesium-widget-credits{
+      background: rgba(250,246,238,0.75) !important;
+      border: 1px solid rgba(12,18,30,0.12) !important;
+
+      transform: scale(0.78);
+      transform-origin: left bottom;
+      opacity: 0.55;
+    }
+
+    /* Optional: keep Cesium toolbar nicely tucked */
+    .cesium-viewer-toolbar{
+      top: 10px !important;
+      right: 10px !important;
+    }
+
+    /* =========================================================
+       SWITCH-STYLE LAYER PANEL (like your screenshot)
+       ========================================================= */
+    .layerBox{
+      border: 1px solid var(--stroke);
+      background: var(--cardBg2);
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.03) inset;
+    }
+
+    .layerSectionTitle{
+      padding: 10px 12px 8px;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.7px;
+      color: var(--sectionTitle);
+      text-transform: uppercase;
+    }
+
+    .layerList{
+      padding: 2px 6px 8px;
+    }
+
+    .layerRow{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 8px;
+      border-radius: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .layerRow:hover{
+      background: rgba(255,255,255,0.04);
+    }
+    html[data-theme="light"] .layerRow:hover{
+      background: rgba(12,18,30,0.04);
+    }
+
+    .layerLeft{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .layerIcon{
+      width: 18px;
+      height: 18px;
+      border-radius: 6px;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      font-size: 12px;
+    }
+    html[data-theme="light"] .layerIcon{
+      background: rgba(12,18,30,0.04);
+      border: 1px solid rgba(12,18,30,0.12);
+    }
+
+    .layerName{
+      font-size: 13px;
+      font-weight: 650;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .layerDivider{
+      height: 1px;
+      margin: 6px 12px;
+      background: rgba(255,255,255,0.10);
+    }
+    html[data-theme="light"] .layerDivider{
+      background: rgba(12,18,30,0.12);
+    }
+
+    /* Switch */
+    .switch{
+      position: relative;
+      width: 44px;
+      height: 24px;
+      flex: 0 0 auto;
+    }
+
+    .switch input{
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+
+    .slider{
+      position: absolute;
+      inset: 0;
+      border-radius: 999px;
+      background: var(--switchOff);
+      border: 1px solid rgba(255,255,255,0.10);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+      transition: background 140ms ease, border-color 140ms ease;
+    }
+
+    .slider:before{
+      content: "";
+      position: absolute;
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      top: 50%;
+      transform: translateY(-50%);
+      border-radius: 50%;
+      background: var(--switchKnob);
+      box-shadow: 0 6px 16px rgba(0,0,0,0.28);
+      transition: transform 140ms ease;
+    }
+
+    .switch input:checked + .slider{
+      background: var(--switchOn);
+      border-color: rgba(33,208,122,0.25);
+    }
+
+    .switch input:checked + .slider:before{
+      transform: translate(20px, -50%);
+    }
+
+    .legendBox{
+      margin: 10px 12px 12px;
+      padding: 10px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--stroke);
+      background: var(--legendBg);
+    }
+
+    .legendTitle{
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.7px;
+      color: var(--sectionTitle);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .legendRow{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .legendItem{
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .dot{
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.40);
+    }
+
+    /* =========================================================
+       AI CHAT (professional overlay)
+       ========================================================= */
+    #chatToggle{
+      position: absolute;
+      right: 16px;
+      bottom: 16px;
+      width: 52px;
+      height: 52px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      user-select: none;
+      z-index: 50;
+
+      background: var(--cardBg);
+      border: 1px solid var(--strokeSoft);
+      box-shadow:
+        0 18px 45px rgba(0,0,0,0.24),
+        0 0 0 1px rgba(255,255,255,0.05) inset;
+
+      transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+      font-size: 22px;
+    }
+
+    #chatToggle:hover{
+      transform: translateY(-1px);
+      border-color: var(--btnHoverBorder);
+      box-shadow:
+        0 20px 55px rgba(0,0,0,0.28),
+        0 0 0 1px rgba(255,255,255,0.06) inset;
+    }
+
+    #chatPanel{
+      position: absolute;
+      right: 16px;
+      bottom: 76px;
+      width: 360px;
+      height: 440px;
+      max-height: calc(100% - 120px);
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 60;
+
+      background: var(--cardBg);
+      border: 1px solid var(--strokeSoft);
+      border-radius: 16px;
+      box-shadow:
+        0 22px 70px rgba(0,0,0,0.30),
+        0 0 0 1px rgba(255,255,255,0.05) inset;
+
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    #chatPanel.open{ display: flex; }
+
+    #chatHeader{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--stroke);
+      background: var(--cardBg2);
+    }
+
+    .chatTitle{
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .chatTitle strong{
+      font-size: 13px;
+      letter-spacing: 0.2px;
+    }
+    .chatTitle span{
+      font-size: 11px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #chatCloseBtn{
+      border: 1px solid var(--stroke);
+      background: transparent;
+      color: var(--text);
+      border-radius: 10px;
+      width: 32px;
+      height: 32px;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+    }
+    #chatCloseBtn:hover{ border-color: var(--btnHoverBorder); }
+
+    #chatContent{
+      flex: 1;
+      padding: 12px;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .msgRow{
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+    }
+    .msgRow.user{ justify-content: flex-end; }
+    .msgRow.bot{ justify-content: flex-start; }
+
+    .bubble{
+      max-width: 80%;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px solid var(--stroke);
+      font-size: 12.5px;
+      line-height: 1.35;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .bubble.user{
+      background: var(--chatUser);
+      border-color: var(--strokeSoft);
+    }
+    .bubble.bot{
+      background: var(--chatBot);
+    }
+
+    .typing{
+      font-size: 12px;
+      color: var(--muted);
+      padding: 0 2px;
+    }
+
+    #chatInput{
+      display: flex;
+      gap: 8px;
+      padding: 10px;
+      border-top: 1px solid var(--stroke);
+      background: var(--cardBg2);
+    }
+
+    #chatText{
+      flex: 1;
+      border-radius: 12px;
+      border: 1px solid var(--stroke);
+      background: var(--chatInput);
+      color: var(--text);
+      padding: 10px 10px;
+      font-size: 12.5px;
+      outline: none;
+    }
+    #chatText:focus{
+      border-color: var(--btnHoverBorder);
+      box-shadow: 0 0 0 3px var(--glow);
+    }
+
+    #chatSendBtn{
+      border-radius: 12px;
+      border: 1px solid var(--strokeSoft);
+      background: var(--btnBg);
+      color: var(--text);
+      padding: 0 12px;
+      font-size: 12.5px;
+      font-weight: 800;
+      cursor: pointer;
+      min-width: 72px;
+    }
+    #chatSendBtn:hover{
+      border-color: var(--btnHoverBorder);
+    }
+    #chatSendBtn:disabled{
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* =========================================================
+       Quick questions (chips)
+       ========================================================= */
+    .quickQsWrap{
+      border: 1px solid var(--stroke);
+      background: var(--cardBg2);
+      border-radius: 14px;
+      padding: 10px;
+    }
+    .quickQsTitle{
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+    .quickQsGrid{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .quickQBtn{
+      border: 1px solid var(--strokeSoft);
+      background: var(--btnBg);
+      color: var(--text);
+      font-size: 12px;
+      padding: 7px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .quickQBtn:hover{
+      border-color: var(--btnHoverBorder);
+    }
+    
+  </style>
+</head>
+
+<body>
+  <div id="appFrame">
+    <!-- Heading -->
+    <div id="header">
+      <div class="titlePill">
+        <div class="pillTopRow">
+          <span class="statusDot" aria-hidden="true"></span>
+          <div class="pillTitle">Surface Urban Heat Island (SUHI) Germany</div>
+        </div>
+        <div class="pillSub">Summer Daytime Heat patterns across Essen, Wuppertal &amp; Soest</div>
+      </div>
+
+      <div class="logo">
+        <img src="./assets/logo.png" alt="Logo" class="logoImg" />
+      </div>
+    </div>
+
+    <!-- Top controls -->
+    <div id="toolbar">
+      <div class="pill-select" id="cityControl" role="group" aria-label="City">
+        <div class="pill-label">City</div>
+        <div class="segmented" id="cityPills">
+          <button type="button" class="seg-btn active" aria-pressed="true"  data-city="ALL">All</button>
+          <button type="button" class="seg-btn"        aria-pressed="false" data-city="Wuppertal">Wuppertal</button>
+          <button type="button" class="seg-btn"        aria-pressed="false" data-city="Essen">Essen</button>
+          <button type="button" class="seg-btn"        aria-pressed="false" data-city="Soest">Soest</button>
+        </div>
+      </div>
+
+      <div class="pill-select" id="yearControl" role="group" aria-label="Year">
+        <div class="pill-label">Year</div>
+        <div class="segmented" id="yearPills">
+          <button type="button" class="seg-btn"        aria-pressed="false" data-year="2022">2022</button>
+          <button type="button" class="seg-btn active" aria-pressed="true"  data-year="2024">2024</button>
+        </div>
+      </div>
+
+      <button class="pill themeToggle" id="themeToggle" type="button" title="Toggle theme">
+        <span id="themeIcon" style="font-size:14px;">☾</span>
+        <span id="themeText" style="font-size:12px; font-weight:700;">Dark</span>
+      </button>
+    </div>
+
+    <div id="content">
+      <aside id="leftPanel">
+        <div class="panelHeader">
+          <div class="h">Controls Panel</div>
+          <div class="dot" title="active"></div>
+        </div>
+
+        <div class="card">
+          <div class="ct">Selected</div>
+          <div id="selectedInfo" style="font-size:13px; font-weight:700;">All cities • 2024</div>
+        </div>
+
+        <!-- ✅ NEW: switch-style layer controls -->
+        <div class="card">
+          <div class="ct">Layers</div>
+
+          <div class="layerBox" id="layerBox">
+            <div class="layerSectionTitle">Heat Stressors</div>
+            <div class="layerList">
+              <div class="layerRow" data-toggle-row="lst">
+                <div class="layerLeft">
+                <span class="layerName">LST (°C)</span>
+                </div>
+                <label class="switch" aria-label="Toggle LST">
+                  <input class="layerSwitch" type="checkbox" data-layer="lst" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="layerRow" data-toggle-row="suhi">
+                <div class="layerLeft">
+                  <span class="layerName">SUHI (°C)</span>
+                </div>
+                <label class="switch" aria-label="Toggle SUHI">
+                  <input class="layerSwitch" type="checkbox" data-layer="suhi" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="layerDivider"></div>
+
+            <div class="layerSectionTitle">Environmental Drivers</div>
+            <div class="layerList">
+              <div class="layerRow" data-toggle-row="ndvi">
+                <div class="layerLeft">
+                  <span class="layerName">Greenness</span>
+                </div>
+                <label class="switch" aria-label="Toggle NDVI">
+                  <input class="layerSwitch" type="checkbox" data-layer="ndvi" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="layerRow" data-toggle-row="ndbi">
+                <div class="layerLeft">
+                  <span class="layerName">Built-up</span>
+                </div>
+                <label class="switch" aria-label="Toggle NDBI">
+                  <input class="layerSwitch" type="checkbox" data-layer="ndbi" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="layerRow" data-toggle-row="ndwi">
+                <div class="layerLeft">
+                  <span class="layerName">Water Proximity</span>
+                </div>
+                <label class="switch" aria-label="Toggle NDWI">
+                  <input class="layerSwitch" type="checkbox" data-layer="ndwi" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="layerRow" data-toggle-row="albedo">
+                <div class="layerLeft">
+                  <span class="layerName">Surface Albedo</span>
+                </div>
+                <label class="switch" aria-label="Toggle Albedo">
+                  <input class="layerSwitch" type="checkbox" data-layer="albedo" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="layerRow" data-toggle-row="lcz">
+                <div class="layerLeft">
+                  <span class="layerName">Local CLimate Zones (LCZ)</span>
+                </div>
+                <label class="switch" aria-label="Toggle LCZ">
+                  <input class="layerSwitch" type="checkbox" data-layer="lcz" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <div class="layerRow" data-toggle-row="elevation">
+                <div class="layerLeft">
+                  <span class="layerName">Elevation</span>
+                </div>
+                <label class="switch" aria-label="Toggle Elevation">
+                  <input class="layerSwitch" type="checkbox" data-layer="elevation" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="layerDivider"></div>
+
+            <div class="layerSectionTitle">Urban Morphometrics</div>
+            <div class="layerList">
+              <div class="layerRow" data-toggle-row="buildings3d">
+                <div class="layerLeft">
+                  <span class="layerName">3D Buildings</span>
+                </div>
+                <label class="switch" aria-label="Toggle 3D Buildings">
+                  <input class="layerSwitch" type="checkbox" data-layer="buildings3d" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+            </div>
+
+        <div class="card">
+          <div class="ct">KPIs (placeholder)</div>
+          <div class="empty">
+            Charts / stats will appear here
+          </div>
+        </div>
+      </aside>
+
+      <main id="mapArea">
+        <div id="cesiumContainer"></div>
+
+        <!-- AI Chat Toggle and Panel (integrated) -->
+        <div id="chatToggle" title="Ask the AI Assistant" aria-label="Open AI Assistant" role="button">🤖</div>
+
+        <div id="chatPanel" aria-label="AI Assistant panel" role="dialog" aria-modal="false">
+          <div id="chatHeader">
+            <div class="chatTitle">
+              <strong>AI Assistant</strong>
+              <span id="chatSubTitle"></span>
+            </div>
+            <button id="chatCloseBtn" type="button" aria-label="Close chat">×</button>
+          </div>
+
+          <div id="chatContent"></div>
+
+          <div id="chatInput">
+            <input id="chatText" type="text" placeholder="Ask anything." />
+            <button id="chatSendBtn" type="button">Send</button>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div id="footer">
+      <div>Designed by Saurabh Bhagchandani - Faculty ITC, Master's Geo-Information Science and Earth Observation</div>
+      <div>© Data sources &amp; processing noted in documentation</div>
+    </div>
+  </div>
+
+  <script>
+    Cesium.Ion.defaultAccessToken =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI2ODkyMTBkYy00ZWZhLTRiZTQtYWRkZi0wZmQxOWUyNmUyZTgiLCJpZCI6MzY2OTcxLCJpYXQiOjE3NzE1Mzc0MDh9.S7mUGUzu62Amq544e5YNF1s8lnYIwXSe3NzFBZe3zBU";
+
+    const appFrameEl = document.getElementById("appFrame");
+
+    // Default Cesium widgets ON (search/home/basemap/mode/help/fullscreen)
+    const viewer = new Cesium.Viewer("cesiumContainer", {
+      timeline: false,
+      animation: false,
+
+      geocoder: true,
+      homeButton: true,
+      sceneModePicker: true,
+      baseLayerPicker: true,
+      navigationHelpButton: true,
+      fullscreenButton: true,
+      vrButton: false,
+
+      infoBox: false,
+      selectionIndicator: false,
+
+      fullscreenElement: appFrameEl
+    });
+
+    // ===== Always top-down camera settings =====
+    const TOPDOWN = { heading: 0.0, pitch: -Cesium.Math.PI_OVER_TWO, roll: 0.0 };
+
+    // Views (tweak heights anytime)
+    const CITY_VIEWS = {
+      ALL:       { lon: 7.50, lat: 51.43, height: 120000 },
+      Essen:     { lon: 7.01, lat: 51.45, height: 45000  },
+      Wuppertal: { lon: 7.17, lat: 51.26, height: 52000  },
+      Soest:     { lon: 8.11, lat: 51.57, height: 65000  }
+    };
+
+    function flyToCityTopDown(key){
+      const v = CITY_VIEWS[key] || CITY_VIEWS.ALL;
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(v.lon, v.lat, v.height),
+        orientation: TOPDOWN,
+        duration: 1.0
+      });
+    }
+
+    // Make HOME go to "ALL"
+    viewer.homeButton.viewModel.command.beforeExecute.addEventListener(function(e){
+      e.cancel = true;
+      flyToCityTopDown("ALL");
+    });
+
+    // ===== Boundaries from Cesium ion =====
+    const ASSETS = [
+      { id: 4469165, name: "Essen",     color: Cesium.Color.RED },
+      { id: 4469163, name: "Wuppertal", color: Cesium.Color.RED },
+      { id: 4469166, name: "Soest",     color: Cesium.Color.RED }
+    ];
+
+    const loadedByName = new Map();
+
+    async function addBoundaryFromIon(assetId, color, name) {
+      const resource = await Cesium.IonResource.fromAssetId(assetId);
+      const ds = await Cesium.GeoJsonDataSource.load(resource, { clampToGround: true });
+      ds.name = name;
+      viewer.dataSources.add(ds);
+
+      const now = Cesium.JulianDate.now();
+
+      for (const e of ds.entities.values) {
+        if (e.polygon) {
+          e.polygon.material = Cesium.Color.TRANSPARENT;
+          e.polygon.outline = false;
+
+          const h = e.polygon.hierarchy?.getValue(now);
+          if (h?.positions?.length) {
+            const closed = h.positions.concat([h.positions[0]]);
+            e.polyline = new Cesium.PolylineGraphics({
+              positions: closed,
+              width: 4,
+              material: color,
+              clampToGround: true
+            });
+          }
+        }
+
+        if (e.polyline) {
+          e.polyline.material = color;
+          e.polyline.width = 4;
+          e.polyline.clampToGround = true;
+        }
+      }
+
+      return ds;
+    }
+
+    // ===== UI state =====
+    const selectedInfo = document.getElementById("selectedInfo");
+    let selectedCity = "ALL";
+    let selectedYear = "2024";
+
+    function updateSelectedLabel(){
+      selectedInfo.textContent =
+        (selectedCity === "ALL" ? "All cities" : selectedCity) + " • " + selectedYear;
+    }
+
+    function applyBoundaryVisibility(){
+      if (loadedByName.size === 0) return;
+
+      if (selectedCity === "ALL") {
+        for (const [, ds] of loadedByName) ds.show = true;
+        return;
+      }
+      for (const [name, ds] of loadedByName) ds.show = (name === selectedCity);
+    }
+
+    function handleSelectionChange(){
+      updateSelectedLabel();
+      applyBoundaryVisibility();
+      flyToCityTopDown(selectedCity);
+      console.log("Selection:", selectedCity, selectedYear);
+
+      // OPTIONAL (future): if you swap raster URLs by year/city, do it here.
+      // refreshRasterSources(selectedCity, selectedYear);
+    }
+
+    function setupPills(containerId, dataKey, onChange){
+      const el = document.getElementById(containerId);
+
+      el.addEventListener("click", (e) => {
+        const btn = e.target.closest(`button[data-${dataKey}]`);
+        if(!btn) return;
+
+        el.querySelectorAll("button").forEach(b => {
+          const isActive = (b === btn);
+          b.classList.toggle("active", isActive);
+          b.setAttribute("aria-pressed", isActive ? "true" : "false");
+        });
+
+        onChange(btn.dataset[dataKey]);
+      });
+    }
+
+    setupPills("cityPills", "city", (city) => {
+      selectedCity = city;
+      handleSelectionChange();
+    });
+
+    setupPills("yearPills", "year", (year) => {
+      selectedYear = year;
+      handleSelectionChange();
+    });
+
+    // Load boundaries, then enforce visibility
+    (async () => {
+      try {
+        for (const a of ASSETS) {
+          const ds = await addBoundaryFromIon(a.id, a.color, a.name);
+          loadedByName.set(a.name, ds);
+        }
+        applyBoundaryVisibility();
+      } catch (err) {
+        console.error("Boundary load failed:", err);
+      }
+    })();
+
+    handleSelectionChange();
+
+    // =========================================================
+    // SWITCH LAYER TOGGLES (on/off like your screenshot)
+    // =========================================================
+    // Register your real Cesium objects here later:
+    // - ImageryLayer: viewer.imageryLayers.addImageryProvider(...)
+    // - DataSource: viewer.dataSources.add(...)
+    // - 3DTileset: viewer.scene.primitives.add(...)
+    const LAYER_REGISTRY = {
+      lst: null,
+      suhi: null,
+      ndvi: null,
+      ndbi: null,
+      ndwi: null,
+      albedo: null,
+      lcz: null,
+      buildings3d: null
+      // elevation handled via terrainProvider toggle below
+    };
+
+    function setVisible(obj, on){
+      if (!obj) return;
+      if (typeof obj.show === "boolean") { obj.show = on; return; }
+      if ("show" in obj) obj.show = on;
+    }
+
+    function getLayerState(){
+      try { return JSON.parse(localStorage.getItem("layerState") || "{}"); }
+      catch { return {}; }
+    }
+    function setLayerState(state){
+      localStorage.setItem("layerState", JSON.stringify(state));
+    }
+
+    async function toggleElevation(on){
+      try{
+        if (on) {
+          if (Cesium.createWorldTerrainAsync) {
+            viewer.terrainProvider = await Cesium.createWorldTerrainAsync();
+          } else {
+            viewer.terrainProvider = Cesium.createWorldTerrain();
+          }
+        } else {
+          viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
+        }
+      } catch (e) {
+        console.error("Elevation toggle failed:", e);
+        viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
+      }
+    }
+
+    // Click anywhere on the row -> toggles the switch
+    document.querySelectorAll(".layerRow").forEach((row) => {
+      row.addEventListener("click", (e) => {
+        // If user clicked directly on the input, let default happen
+        if (e.target && (e.target.tagName === "INPUT" || e.target.classList.contains("slider"))) return;
+
+        const key = row.getAttribute("data-toggle-row");
+        const cb = document.querySelector(`.layerSwitch[data-layer="${key}"]`);
+        if (!cb) return;
+        cb.checked = !cb.checked;
+        cb.dispatchEvent(new Event("change", { bubbles: true }));
+      });
+    });
+
+    // Initialize switches from localStorage + wire change events
+    document.querySelectorAll(".layerSwitch").forEach((cb) => {
+      const key = cb.dataset.layer;
+      const state = getLayerState();
+      cb.checked = !!state[key];
+
+      // Apply initial state
+      if (key === "elevation") {
+        toggleElevation(cb.checked);
+      } else {
+        setVisible(LAYER_REGISTRY[key], cb.checked);
+      }
+
+      cb.addEventListener("change", async (e) => {
+        const on = e.target.checked;
+
+        const s = getLayerState();
+        s[key] = on;
+        setLayerState(s);
+
+        if (key === "elevation") {
+          await toggleElevation(on);
+          return;
+        }
+
+        const ref = LAYER_REGISTRY[key];
+        if (!ref) {
+          console.warn(`Layer "${key}" is not registered yet. Once you add it, the switch will control it.`);
+          return;
+        }
+        setVisible(ref, on);
+      });
+    });
+
+    // Helper: call this after you create a layer
+    function registerLayer(key, cesiumObj){
+      LAYER_REGISTRY[key] = cesiumObj;
+      const state = getLayerState();
+      setVisible(cesiumObj, !!state[key]);
+    }
+
+    // Expose for debugging in console:
+    window.viewer = viewer;
+    window.registerLayer = registerLayer;
+    window.LAYER_REGISTRY = LAYER_REGISTRY;
+
+    // ===== Theme toggle =====
+    const themeToggle = document.getElementById("themeToggle");
+    const themeIcon = document.getElementById("themeIcon");
+    const themeText = document.getElementById("themeText");
+
+    function applyTheme(theme){
+      document.documentElement.setAttribute("data-theme", theme);
+      localStorage.setItem("theme", theme);
+      themeIcon.textContent = (theme === "light") ? "☀︎" : "☾";
+      themeText.textContent = (theme === "light") ? "Light" : "Dark";
+    }
+
+    const saved = localStorage.getItem("theme");
+    const systemPrefersLight = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches;
+    applyTheme(saved || (systemPrefersLight ? "light" : "dark"));
+
+    themeToggle.addEventListener("click", () => {
+      const current = document.documentElement.getAttribute("data-theme") || "dark";
+      applyTheme(current === "dark" ? "light" : "dark");
+    });
+
+    // =========================================================
+    // AI CHAT (concept assistant)
+    // =========================================================
+    const chatToggle = document.getElementById("chatToggle");
+    const chatPanel = document.getElementById("chatPanel");
+    const chatCloseBtn = document.getElementById("chatCloseBtn");
+    const chatContent = document.getElementById("chatContent");
+    const chatText = document.getElementById("chatText");
+    const chatSendBtn = document.getElementById("chatSendBtn");
+
+    function toggleChat(open){
+      const shouldOpen = (open ?? !chatPanel.classList.contains("open"));
+      chatPanel.classList.toggle("open", shouldOpen);
+      if (shouldOpen) setTimeout(() => chatText.focus(), 50);
+    }
+
+    function appendMessage(role, text){
+      const row = document.createElement("div");
+      row.className = `msgRow ${role}`;
+
+      const bubble = document.createElement("div");
+      bubble.className = `bubble ${role}`;
+      bubble.textContent = text;
+
+      row.appendChild(bubble);
+      chatContent.appendChild(row);
+      chatContent.scrollTop = chatContent.scrollHeight;
+    }
+
+    function setTyping(on){
+      const existing = document.getElementById("typingRow");
+      if (on) {
+        if (existing) return;
+        const row = document.createElement("div");
+        row.id = "typingRow";
+        row.className = "msgRow bot";
+        const t = document.createElement("div");
+        t.className = "typing";
+        t.textContent = "Assistant is typing…";
+        row.appendChild(t);
+        chatContent.appendChild(row);
+        chatContent.scrollTop = chatContent.scrollHeight;
+      } else {
+        if (existing) existing.remove();
+      }
+    }
+
+    // ---------------------------
+    // Wikipedia-only concept assistant (robust + acronym-safe)
+    // ---------------------------
+    const WIKI_GLOSSARY = {
+      "uhi": "Urban heat island",
+      "suhi": "Urban heat island",
+      "lst": "Land surface temperature",
+      "ndvi": "Normalized difference vegetation index",
+      "ndwi": "Normalized difference water index",
+      "mndwi": "Modified normalized difference water index",
+      "ndbi": "Normalized difference built-up index",
+      "savi": "Soil-adjusted vegetation index",
+      "albedo": "Albedo",
+      "albido": "Albedo",
+      "remotesensing": "Remote sensing",
+      "remotesening": "Remote sensing",
+      "gis": "Geographic information system",
+      "hotspot": "Hot spot analysis",
+      "hotspotanalysis": "Hot spot analysis",
+      "coldspot": "Hot spot analysis",
+      "coldspotanalysis": "Hot spot analysis",
+      "lcz": "Local climate zone"
+    };
+
+    const WIKI_CACHE = {
+      search: new Map(),
+      extract: new Map()
+    };
+
+    async function fetchJsonWithRetry(url, { timeoutMs = 9000, retries = 2 } = {}) {
+      let lastErr = null;
+
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+        try {
+          const res = await fetch(url, { signal: controller.signal });
+          clearTimeout(timer);
+
+          if (!res.ok) {
+            if (res.status === 429 && attempt < retries) {
+              await new Promise(r => setTimeout(r, 350 * (attempt + 1)));
+              continue;
+            }
+            throw new Error(`HTTP ${res.status}`);
+          }
+
+          return await res.json();
+        } catch (e) {
+          clearTimeout(timer);
+          lastErr = e;
+          if (attempt < retries) {
+            await new Promise(r => setTimeout(r, 250 * (attempt + 1)));
+            continue;
+          }
+        }
+      }
+
+      throw lastErr || new Error("Wikipedia request failed");
+    }
+
+    function normalizeQuery(raw) {
+      let q = (raw || "").trim();
+      q = q.replace(/^(what is|what’s|whats|define|meaning of)\s+/i, "").trim();
+
+      const key = q.toLowerCase().replace(/[^a-z0-9]/g, "");
+      if (WIKI_GLOSSARY[key]) return { query: WIKI_GLOSSARY[key], forced: true };
+
+      if (/^[A-Z]{2,6}$/.test(q)) {
+        const key2 = q.toLowerCase();
+        if (WIKI_GLOSSARY[key2]) return { query: WIKI_GLOSSARY[key2], forced: true };
+      }
+
+      return { query: q, forced: false };
+    }
+
+    async function wikiSearchCandidates(query, limit = 6) {
+      const q = (query || "").trim();
+      if (!q) return [];
+
+      if (WIKI_CACHE.search.has(q)) return WIKI_CACHE.search.get(q);
+
+      const url =
+        "https://en.wikipedia.org/w/api.php" +
+        `?action=query&list=search&format=json&origin=*` +
+        `&srlimit=${encodeURIComponent(String(limit))}` +
+        `&srsearch=${encodeURIComponent(q)}`;
+
+      const data = await fetchJsonWithRetry(url);
+      const titles = (data?.query?.search || []).map(r => r.title).filter(Boolean);
+
+      WIKI_CACHE.search.set(q, titles);
+      return titles;
+    }
+
+    async function wikiPickBestTitle(titles) {
+      if (!titles || titles.length === 0) return null;
+
+      const joined = titles.join("|");
+      const url =
+        "https://en.wikipedia.org/w/api.php" +
+        `?action=query&prop=pageprops&format=json&origin=*` +
+        `&titles=${encodeURIComponent(joined)}`;
+
+      try {
+        const data = await fetchJsonWithRetry(url, { timeoutMs: 9000, retries: 1 });
+        const pages = data?.query?.pages || {};
+        const byTitle = new Map();
+
+        for (const pid of Object.keys(pages)) {
+          const p = pages[pid];
+          if (p?.title) byTitle.set(p.title, p);
+        }
+
+        for (const t of titles) {
+          const page = byTitle.get(t);
+          const isDisambig = !!page?.pageprops?.disambiguation;
+          if (!isDisambig) return t;
+        }
+      } catch (e) {}
+
+      return titles[0];
+    }
+
+    async function wikiFetchExtract(title) {
+      if (!title) return "";
+
+      if (WIKI_CACHE.extract.has(title)) return WIKI_CACHE.extract.get(title);
+
+      const url =
+        "https://en.wikipedia.org/w/api.php" +
+        `?action=query&prop=extracts&format=json&origin=*` +
+        `&explaintext=1&exsectionformat=plain&exchars=9000` +
+        `&redirects=1` +
+        `&titles=${encodeURIComponent(title)}`;
+
+      const data = await fetchJsonWithRetry(url);
+      const pages = data?.query?.pages;
+      const page = pages ? pages[Object.keys(pages)[0]] : null;
+      const extract = (page?.extract || "").trim();
+
+      WIKI_CACHE.extract.set(title, extract);
+      return extract;
+    }
+
+    function buildWikipediaLink(title) {
+      return `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, "_"))}`;
+    }
+
+    function splitIntoSentences(text) {
+      const t = (text || "").replace(/\s+/g, " ").trim();
+      const matches = t.match(/[^.!?]+[.!?]+(\s+|$)/g);
+      if (matches && matches.length) return matches.map(s => s.trim());
+      return t.split(/\n+/).map(s => s.trim()).filter(Boolean);
+    }
+
+    function leadSentences(extract, n = 3) {
+      const sents = splitIntoSentences(extract).filter(s => s.length > 15);
+      return sents.slice(0, n);
+    }
+
+    function pickBestSentences(text, question, maxSentences = 3) {
+      const stop = new Set([
+        "the","a","an","and","or","but","if","then","else","when","what","why","how","who","which",
+        "is","are","was","were","be","been","being","to","of","in","on","for","with","as","by",
+        "at","from","into","about","it","this","that","these","those","we","you","they","i",
+        "can","could","should","would","may","might","will","do","does","did"
+      ]);
+
+      const qWords = (question || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, " ")
+        .split(/\s+/)
+        .filter(w => w && w.length > 2 && !stop.has(w));
+
+      const qSet = new Set(qWords);
+
+      const sentences = splitIntoSentences(text).filter(s => s.length > 20);
+      if (sentences.length === 0) return [];
+
+      const scored = sentences.map((s, idx) => {
+        const words = s.toLowerCase().replace(/[^a-z0-9\s-]/g, " ").split(/\s+/);
+        let score = 0;
+        for (const w of words) if (qSet.has(w)) score++;
+        score += Math.max(0, 1.5 - idx * 0.02);
+        return { idx, s, score };
+      });
+
+      const top = scored.sort((a,b) => b.score - a.score).slice(0, 6);
+      const chosen = top.sort((a,b) => a.idx - b.idx).slice(0, maxSentences).map(x => x.s.trim());
+      return chosen;
+    }
+
+    function appendQuickQuestions(questions){
+      const old = document.getElementById("quickQsBlock");
+      if (old) old.remove();
+
+      const block = document.createElement("div");
+      block.id = "quickQsBlock";
+      block.className = "quickQsWrap";
+
+      const title = document.createElement("div");
+      title.className = "quickQsTitle";
+      title.textContent = "Quick questions";
+
+      const grid = document.createElement("div");
+      grid.className = "quickQsGrid";
+
+      questions.forEach(q => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "quickQBtn";
+        b.textContent = q;
+        b.addEventListener("click", () => {
+          chatText.value = q;
+          sendChat();
+        });
+        grid.appendChild(b);
+      });
+
+      block.appendChild(title);
+      block.appendChild(grid);
+
+      chatContent.appendChild(block);
+      chatContent.scrollTop = 0;
+    }
+
+    async function askAI(userMessage){
+      const raw = (userMessage || "").trim();
+      if (!raw) return "Ask me a term or concept to explain.";
+
+      try {
+        const norm = normalizeQuery(raw);
+        const q = norm.query;
+
+        if (norm.forced) {
+          const extract = await wikiFetchExtract(q);
+          const link = buildWikipediaLink(q);
+
+          if (!extract) return `I couldn’t retrieve a Wikipedia summary right now.\n\nSource: ${link}`;
+
+          const lead = leadSentences(extract, 3).join(" ");
+          const out = lead || extract.slice(0, 600).trim();
+          return `${out}\n\nSource: ${link}`;
+        }
+
+        const titles = await wikiSearchCandidates(q, 6);
+        if (!titles.length) return "I couldn’t find a matching Wikipedia page for that.";
+
+        const bestTitle = await wikiPickBestTitle(titles);
+        if (!bestTitle) return "I couldn’t find a matching Wikipedia page for that.";
+
+        const extract = await wikiFetchExtract(bestTitle);
+        const link = buildWikipediaLink(bestTitle);
+
+        if (!extract) return `I found a Wikipedia page, but couldn’t extract readable content.\n\nSource: ${link}`;
+
+        if (extract.toLowerCase().includes("may refer to")) {
+          const options = titles.slice(0, 3).map((t, i) => `${i+1}) ${t}`).join("\n");
+          return `That term is ambiguous on Wikipedia. Try a more specific phrase.\n\nPossible pages:\n${options}\n\nSource: ${link}`;
+        }
+
+        const best = pickBestSentences(extract, raw, 3);
+        const answerBody = best.length ? best.join(" ") : leadSentences(extract, 2).join(" ");
+        const trimmed = answerBody.length > 1100 ? (answerBody.slice(0, 1100).trim() + "…") : answerBody;
+
+        return `${trimmed}\n\nSource: ${link}`;
+      } catch (e) {
+        const msg = String(e || "");
+        const hint =
+          msg.includes("AbortError") ? "Wikipedia request timed out." :
+          msg.includes("HTTP 429") ? "Wikipedia is rate-limiting requests. Please try again in a moment." :
+          "I couldn’t reach Wikipedia right now.";
+
+        return `${hint}\n\nTip: check your internet connection and keep the dashboard running via Live Server.`;
+      }
+    }
+
+    async function sendChat(){
+      const text = chatText.value.trim();
+      if (!text) return;
+
+      const qBlock = document.getElementById("quickQsBlock");
+      if (qBlock) qBlock.remove();
+
+      appendMessage("user", text);
+      chatText.value = "";
+      chatSendBtn.disabled = true;
+
+      setTyping(true);
+      try {
+        const reply = await askAI(text);
+        setTyping(false);
+        appendMessage("bot", reply);
+      } finally {
+        chatSendBtn.disabled = false;
+        chatText.focus();
+      }
+    }
+
+    appendMessage("bot", "Hi! I’m your assistant — ask me anything you’d like to explore.");
+
+    appendQuickQuestions([
+      "What is LST?",
+      "What is UHI?",
+      "What is SUHI?",
+      "What is NDVI?",
+      "What is NDWI?",
+      "What is albedo?",
+      "What is remote sensing?",
+      "What is GIS?",
+      "What is a hotspot analysis?",
+      "What is a cold spot?"
+    ]);
+
+    chatToggle.addEventListener("click", () => toggleChat(true));
+    chatCloseBtn.addEventListener("click", () => toggleChat(false));
+    chatSendBtn.addEventListener("click", sendChat);
+    chatText.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendChat();
+      }
+      if (e.key === "Escape") {
+        toggleChat(false);
+      }
+    });
+
+    window.toggleChat = toggleChat;
+  </script>
+</body>
+</html>
