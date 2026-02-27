@@ -894,7 +894,7 @@
       </div>
 
       <div class="logo">
-        <img src="./assets/logo.png" alt="Logo" class="logoImg" />
+        <img id="siteLogo" src="./assets/logo.png" alt="Logo" class="logoImg" />
       </div>
     </div>
 
@@ -2434,12 +2434,19 @@ function wireLayerSwitches(){
     const themeToggle = document.getElementById("themeToggle");
     const themeIcon = document.getElementById("themeIcon");
     const themeText = document.getElementById("themeText");
+    const siteLogo = document.getElementById("siteLogo");
 
     function applyTheme(theme){
       document.documentElement.setAttribute("data-theme", theme);
       localStorage.setItem("theme", theme);
       themeIcon.textContent = (theme === "light") ? "☀︎" : "☾";
       themeText.textContent = (theme === "light") ? tr("theme_light") : tr("theme_dark");
+
+      if (siteLogo) {
+        siteLogo.src = (theme === "dark")
+          ? "./assets/logo_2.png"
+          : "./assets/logo.png";
+      }
     }
 
     const saved = localStorage.getItem("theme");
