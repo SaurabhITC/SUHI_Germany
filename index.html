@@ -225,21 +225,6 @@
       -webkit-backdrop-filter: blur(10px);
     }
 
-    .pill{
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: var(--cardBg2);
-      border: 1px solid var(--strokeSoft);
-      box-shadow:
-        0 10px 26px rgba(0,0,0,0.12),
-        0 0 0 1px rgba(255,255,255,0.05) inset;
-      color: var(--text);
-    }
-
-    /* ===== City/Year segmented-pill controls ===== */
     .pill-select{
       display:flex;
       align-items:center;
@@ -297,12 +282,85 @@
       outline-offset:2px;
     }
 
-    .themeToggle{
-      cursor: pointer;
-      appearance: none;
-      -webkit-appearance: none;
+
+    .toolbarRight{
       margin-left: auto;
+      display:flex;
+      align-items:center;
+      gap:8px;
     }
+
+    /* ===== Top-right pills: make sizing consistent ===== */
+    .topPill{
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 999px;
+      border: 1px solid var(--strokeSoft);
+      background: var(--cardBg2);
+      color: var(--text);
+      box-shadow:
+        0 10px 26px rgba(0,0,0,0.12),
+        0 0 0 1px rgba(255,255,255,0.05) inset;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:12px;
+      line-height:1;
+      user-select:none;
+      cursor: pointer;
+    }
+    .topPill:hover{ border-color: var(--btnHoverBorder); box-shadow: 0 0 0 3px var(--glow); }
+    .topPill:focus-visible{ outline:2px solid var(--btnHoverBorder); outline-offset:2px; }
+
+    /* ===== Language pill: new style (compact tabs inside a pill) ===== */
+    #langControl{
+      gap: 10px;
+      cursor: default;
+    }
+    #langControl .pill-label{
+      display:none; /* keep in DOM for i18n logic, hide visually */
+    }
+    #langControl .langIcon{
+      display:none;
+    }
+    #langControl .segmented{
+      padding: 0;
+      gap: 10px;
+      border: 0;
+      background: transparent;
+    }
+    #langPills .seg-btn{
+      min-width: 0;
+      padding: 0;
+      font-size: 12px;
+      letter-spacing: .2px;
+      opacity: .75;
+      position: relative;
+    }
+    #langPills .seg-btn.active{
+      background: transparent;
+      border: 0;
+      box-shadow: none;
+      opacity: 1;
+    }
+    #langPills .seg-btn.active::after{
+      content:"";
+      position:absolute;
+      left: 2px;
+      right: 2px;
+      bottom: -10px;
+      height: 2px;
+      border-radius: 2px;
+      background: rgba(58,160,255,0.85);
+    }
+    /* subtle divider between EN and DE */
+    #langPills .seg-btn + .seg-btn{
+      padding-left: 10px;
+      border-left: 1px solid var(--stroke);
+    }
+    .overviewBtn{ font-weight:700; }
+
+    .themeToggle{ font-weight:700; }
 
     /* ===== Layout ===== */
     #content{
@@ -320,7 +378,11 @@
       border-right: 1px solid var(--stroke);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
+
+      scrollbar-width: none;
+      -ms-overflow-style: none;
     }
+    #leftPanel::-webkit-scrollbar{ width: 0; height: 0; }
 
     #leftPanel .panelHeader{
       display: flex;
@@ -337,16 +399,6 @@
       width: 10px; height: 10px; border-radius: 50%;
       background: #21d07a;
       box-shadow: 0 0 0 5px rgba(33,208,122,0.12);
-    }
-
-    /* Hide the left panel scrollbar (but keep scrolling working) */
-    #leftPanel{
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-    }
-    #leftPanel::-webkit-scrollbar{
-      width: 0;
-      height: 0;
     }
 
     .card{
@@ -377,9 +429,7 @@
       text-align: center;
       padding: 12px;
     }
-    html[data-theme="light"] .empty{
-      background: rgba(250,246,238,0.55);
-    }
+    html[data-theme="light"] .empty{ background: rgba(250,246,238,0.55); }
 
     #mapArea{
       position: relative;
@@ -387,10 +437,7 @@
       min-width: 0;
       min-height: 0;
     }
-    #cesiumContainer{
-      position: absolute;
-      inset: 0;
-    }
+    #cesiumContainer{ position: absolute; inset: 0; }
 
     #footer{
       height: var(--footer-h);
@@ -406,17 +453,14 @@
       -webkit-backdrop-filter: blur(10px);
     }
 
-    /* Move Cesium bottom UI down a bit */
     .cesium-viewer-bottom{ bottom: 6px !important; }
 
-    /* ===== Cesium Credits: shrink + fade (keep) ===== */
     .cesium-widget-credits{
       background: rgba(0,0,0,0.20) !important;
       border-radius: 10px !important;
       padding: 4px 8px !important;
       border: 1px solid rgba(255,255,255,0.08) !important;
       backdrop-filter: blur(8px) !important;
-
       transform: scale(0.78);
       transform-origin: left bottom;
       opacity: 0.55;
@@ -424,21 +468,17 @@
     html[data-theme="light"] .cesium-widget-credits{
       background: rgba(250,246,238,0.75) !important;
       border: 1px solid rgba(12,18,30,0.12) !important;
-
       transform: scale(0.78);
       transform-origin: left bottom;
       opacity: 0.55;
     }
 
-    /* Optional: keep Cesium toolbar nicely tucked */
     .cesium-viewer-toolbar{
       top: 10px !important;
       right: 10px !important;
     }
 
-    /* =========================================================
-       SWITCH-STYLE LAYER PANEL (like your screenshot)
-       ========================================================= */
+    /* Layer box + switches */
     .layerBox{
       border: 1px solid var(--stroke);
       background: var(--cardBg2);
@@ -446,7 +486,6 @@
       overflow: hidden;
       box-shadow: 0 0 0 1px rgba(255,255,255,0.03) inset;
     }
-
     .layerSectionTitle{
       padding: 10px 12px 8px;
       font-size: 11px;
@@ -455,11 +494,7 @@
       color: var(--sectionTitle);
       text-transform: uppercase;
     }
-
-    .layerList{
-      padding: 2px 6px 8px;
-    }
-
+    .layerList{ padding: 2px 6px 8px; }
     .layerRow{
       display: flex;
       align-items: center;
@@ -470,37 +505,11 @@
       cursor: pointer;
       user-select: none;
     }
+    .layerRow:hover{ background: rgba(255,255,255,0.04); }
+    html[data-theme="light"] .layerRow:hover{ background: rgba(12,18,30,0.04); }
 
-    .layerRow:hover{
-      background: rgba(255,255,255,0.04);
-    }
-    html[data-theme="light"] .layerRow:hover{
-      background: rgba(12,18,30,0.04);
-    }
-
-    .layerLeft{
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      min-width: 0;
-    }
-
-    .layerIcon{
-      width: 18px;
-      height: 18px;
-      border-radius: 6px;
-      display: grid;
-      place-items: center;
-      flex: 0 0 auto;
-      background: rgba(255,255,255,0.06);
-      border: 1px solid rgba(255,255,255,0.10);
-      font-size: 12px;
-    }
-    html[data-theme="light"] .layerIcon{
-      background: rgba(12,18,30,0.04);
-      border: 1px solid rgba(12,18,30,0.12);
-    }
-
+    .layerLeft{ display:flex; align-items:center; gap:10px; min-width:0; flex:1; }
+    .layerNameWrap{ display:flex; align-items:center; gap:8px; min-width:0; flex:1; }
     .layerName{
       font-size: 13px;
       font-weight: 650;
@@ -508,131 +517,99 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      min-width: 0;
     }
+    /* Info icon button (opens modal) */
+    .infoBtn{
+      flex: 0 0 auto;
+      width: 20px;
+      height: 20px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      background: rgba(255,255,255,0.03);
+      color: var(--muted);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      user-select: none;
+      line-height: 1;
+      padding: 0;
+    }
+    html[data-theme="light"] .infoBtn{ background: rgba(12,18,30,0.03); }
 
+.infoIco{
+      width: 12px;
+      height: 12px;
+      display: block;
+    }
+.infoIco *{
+      vector-effect: non-scaling-stroke;
+    }
+    .infoBtn:hover{
+      color: var(--text);
+      background: rgba(255,255,255,0.06);
+      border-color: var(--strokeSoft);
+      box-shadow: none;
+    }
+    html[data-theme="light"] .infoBtn:hover{ background: rgba(12,18,30,0.06); }
+    .infoBtn:focus-visible{
+      outline: 2px solid var(--btnHoverBorder);
+      outline-offset: 2px;
+    }
     .layerDivider{
       height: 1px;
       margin: 6px 12px;
       background: rgba(255,255,255,0.10);
     }
-    html[data-theme="light"] .layerDivider{
-      background: rgba(12,18,30,0.12);
-    }
+    html[data-theme="light"] .layerDivider{ background: rgba(12,18,30,0.12); }
 
-    /* Switch */
-    .switch{
-      position: relative;
-      width: 44px;
-      height: 24px;
-      flex: 0 0 auto;
-    }
-
-    .switch input{
-      opacity: 0;
-      width: 0;
-      height: 0;
-      position: absolute;
-    }
-
+    .switch{ position:relative; width:44px; height:24px; flex:0 0 auto; }
+    .switch input{ opacity:0; width:0; height:0; position:absolute; }
     .slider{
-      position: absolute;
-      inset: 0;
-      border-radius: 999px;
+      position:absolute; inset:0;
+      border-radius:999px;
       background: var(--switchOff);
       border: 1px solid rgba(255,255,255,0.10);
       box-shadow: 0 6px 18px rgba(0,0,0,0.25);
       transition: background 140ms ease, border-color 140ms ease;
     }
-
     .slider:before{
-      content: "";
-      position: absolute;
-      height: 18px;
-      width: 18px;
-      left: 3px;
-      top: 50%;
+      content:"";
+      position:absolute;
+      height:18px; width:18px;
+      left:3px; top:50%;
       transform: translateY(-50%);
-      border-radius: 50%;
+      border-radius:50%;
       background: var(--switchKnob);
       box-shadow: 0 6px 16px rgba(0,0,0,0.28);
       transition: transform 140ms ease;
     }
-
     .switch input:checked + .slider{
       background: var(--switchOn);
       border-color: rgba(33,208,122,0.25);
     }
-
     .switch input:checked + .slider:before{
       transform: translate(20px, -50%);
     }
 
-    .legendBox{
-      margin: 10px 12px 12px;
-      padding: 10px 10px;
-      border-radius: 12px;
-      border: 1px solid var(--stroke);
-      background: var(--legendBg);
-    }
-
-    .legendTitle{
-      font-size: 11px;
-      font-weight: 900;
-      letter-spacing: 0.7px;
-      color: var(--sectionTitle);
-      text-transform: uppercase;
-      margin-bottom: 8px;
-    }
-
-    .legendRow{
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-    }
-
-    .legendItem{
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11.5px;
-      color: var(--muted);
-      white-space: nowrap;
-    }
-
-    .dot{
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.40);
-    }
-
-    /* =========================================================
-       AI CHAT (professional overlay)
-       ========================================================= */
+    /* Chat */
     #chatToggle{
-      position: absolute;
-      right: 16px;
-      bottom: 16px;
-      width: 52px;
-      height: 52px;
-      border-radius: 999px;
-      display: grid;
-      place-items: center;
-      cursor: pointer;
-      user-select: none;
-      z-index: 50;
-
+      position:absolute;
+      right:16px; bottom:16px;
+      width:52px; height:52px;
+      border-radius:999px;
+      display:grid; place-items:center;
+      cursor:pointer;
+      user-select:none;
+      z-index:50;
       background: var(--cardBg);
       border: 1px solid var(--strokeSoft);
       box-shadow:
         0 18px 45px rgba(0,0,0,0.24),
         0 0 0 1px rgba(255,255,255,0.05) inset;
-
       transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
-      font-size: 22px;
+      font-size:22px;
     }
-
     #chatToggle:hover{
       transform: translateY(-1px);
       border-color: var(--btnHoverBorder);
@@ -640,159 +617,116 @@
         0 20px 55px rgba(0,0,0,0.28),
         0 0 0 1px rgba(255,255,255,0.06) inset;
     }
-
     #chatPanel{
-      position: absolute;
-      right: 16px;
-      bottom: 76px;
-      width: 360px;
-      height: 440px;
+      position:absolute;
+      right:16px; bottom:76px;
+      width:360px; height:440px;
       max-height: calc(100% - 120px);
-      display: none;
-      flex-direction: column;
-      overflow: hidden;
-      z-index: 60;
-
+      display:none;
+      flex-direction:column;
+      overflow:hidden;
+      z-index:60;
       background: var(--cardBg);
       border: 1px solid var(--strokeSoft);
-      border-radius: 16px;
+      border-radius:16px;
       box-shadow:
         0 22px 70px rgba(0,0,0,0.30),
         0 0 0 1px rgba(255,255,255,0.05) inset;
-
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
     }
-
-    #chatPanel.open{ display: flex; }
+    #chatPanel.open{ display:flex; }
 
     #chatHeader{
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--stroke);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:10px 12px;
+      border-bottom:1px solid var(--stroke);
       background: var(--cardBg2);
     }
-
-    .chatTitle{
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      min-width: 0;
-    }
-    .chatTitle strong{
-      font-size: 13px;
-      letter-spacing: 0.2px;
-    }
+    .chatTitle{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+    .chatTitle strong{ font-size:13px; letter-spacing:0.2px; }
     .chatTitle span{
-      font-size: 11px;
-      color: var(--muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-size:11px; color: var(--muted);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
     }
 
     #chatCloseBtn{
       border: 1px solid var(--stroke);
       background: transparent;
       color: var(--text);
-      border-radius: 10px;
-      width: 32px;
-      height: 32px;
-      cursor: pointer;
-      display: grid;
-      place-items: center;
+      border-radius:10px;
+      width:32px; height:32px;
+      cursor:pointer;
+      display:grid; place-items:center;
     }
     #chatCloseBtn:hover{ border-color: var(--btnHoverBorder); }
 
     #chatContent{
-      flex: 1;
-      padding: 12px;
-      overflow: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      flex:1;
+      padding:12px;
+      overflow:auto;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
     }
 
-    .msgRow{
-      display: flex;
-      gap: 10px;
-      align-items: flex-end;
-    }
-    .msgRow.user{ justify-content: flex-end; }
-    .msgRow.bot{ justify-content: flex-start; }
+    .msgRow{ display:flex; gap:10px; align-items:flex-end; }
+    .msgRow.user{ justify-content:flex-end; }
+    .msgRow.bot{ justify-content:flex-start; }
 
     .bubble{
-      max-width: 80%;
-      padding: 10px 12px;
-      border-radius: 14px;
-      border: 1px solid var(--stroke);
-      font-size: 12.5px;
-      line-height: 1.35;
-      white-space: pre-wrap;
-      word-break: break-word;
+      max-width:80%;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid var(--stroke);
+      font-size:12.5px;
+      line-height:1.35;
+      white-space:pre-wrap;
+      word-break:break-word;
     }
-    .bubble.user{
-      background: var(--chatUser);
-      border-color: var(--strokeSoft);
-    }
-    .bubble.bot{
-      background: var(--chatBot);
-    }
+    .bubble.user{ background: var(--chatUser); border-color: var(--strokeSoft); }
+    .bubble.bot{ background: var(--chatBot); }
 
-    .typing{
-      font-size: 12px;
-      color: var(--muted);
-      padding: 0 2px;
-    }
+    .typing{ font-size:12px; color: var(--muted); padding:0 2px; }
 
     #chatInput{
-      display: flex;
-      gap: 8px;
-      padding: 10px;
-      border-top: 1px solid var(--stroke);
+      display:flex;
+      gap:8px;
+      padding:10px;
+      border-top:1px solid var(--stroke);
       background: var(--cardBg2);
     }
-
     #chatText{
-      flex: 1;
-      border-radius: 12px;
-      border: 1px solid var(--stroke);
+      flex:1;
+      border-radius:12px;
+      border:1px solid var(--stroke);
       background: var(--chatInput);
       color: var(--text);
-      padding: 10px 10px;
-      font-size: 12.5px;
-      outline: none;
+      padding:10px 10px;
+      font-size:12.5px;
+      outline:none;
     }
     #chatText:focus{
       border-color: var(--btnHoverBorder);
       box-shadow: 0 0 0 3px var(--glow);
     }
-
     #chatSendBtn{
-      border-radius: 12px;
-      border: 1px solid var(--strokeSoft);
+      border-radius:12px;
+      border:1px solid var(--strokeSoft);
       background: var(--btnBg);
       color: var(--text);
-      padding: 0 12px;
-      font-size: 12.5px;
-      font-weight: 800;
-      cursor: pointer;
-      min-width: 72px;
+      padding:0 12px;
+      font-size:12.5px;
+      font-weight:800;
+      cursor:pointer;
+      min-width:72px;
     }
-    #chatSendBtn:hover{
-      border-color: var(--btnHoverBorder);
-    }
-    #chatSendBtn:disabled{
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
+    #chatSendBtn:hover{ border-color: var(--btnHoverBorder); }
+    #chatSendBtn:disabled{ opacity:0.6; cursor:not-allowed; }
 
-    /* =========================================================
-       Quick questions (chips)
-       ========================================================= */
     .quickQsWrap{
       border: 1px solid var(--stroke);
       background: var(--cardBg2);
@@ -804,11 +738,7 @@
       color: var(--muted);
       margin-bottom: 8px;
     }
-    .quickQsGrid{
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
+    .quickQsGrid{ display:flex; flex-wrap:wrap; gap:8px; }
     .quickQBtn{
       border: 1px solid var(--strokeSoft);
       background: var(--btnBg);
@@ -819,10 +749,135 @@
       cursor: pointer;
       user-select: none;
     }
-    .quickQBtn:hover{
-      border-color: var(--btnHoverBorder);
+    .quickQBtn:hover{ border-color: var(--btnHoverBorder); }
+
+
+    /* =========================================================
+       INFO MODAL (Layer explanations)
+       ========================================================= */
+    .modalOverlay{
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      background: rgba(0,0,0,0.48);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 14px;
     }
-    
+    html[data-theme="light"] .modalOverlay{
+      background: rgba(12,18,30,0.24);
+    }
+    .modalOverlay.open{ display:flex; }
+
+    .modalCard{
+      width: min(760px, calc(100% - 10px));
+      max-height: min(78vh, 680px);
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+      border-radius: 18px;
+      background: var(--cardBg);
+      border: 1px solid var(--strokeSoft);
+      box-shadow:
+        0 28px 90px rgba(0,0,0,0.40),
+        0 0 0 1px rgba(255,255,255,0.05) inset;
+    }
+
+    .modalHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      background: var(--cardBg2);
+      border-bottom: 1px solid var(--stroke);
+    }
+
+    .modalTitleWrap{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+    .modalTitle{
+      font-size: 14px;
+      font-weight: 950;
+      letter-spacing: 0.2px;
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .modalSubtitle{
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+
+    .modalCloseBtn{
+      border: 1px solid var(--stroke);
+      background: transparent;
+      color: var(--text);
+      border-radius: 12px;
+      width: 36px; height: 36px;
+      cursor: pointer;
+      display:grid;
+      place-items:center;
+      flex: 0 0 auto;
+    }
+    .modalCloseBtn:hover{ border-color: var(--btnHoverBorder); box-shadow: 0 0 0 3px var(--glow); }
+    .modalCloseBtn:focus-visible{ outline: 2px solid var(--btnHoverBorder); outline-offset: 2px; }
+
+    .modalBody{
+      padding: 14px 14px 16px;
+      overflow: auto;
+      /* hide the scrollbar but keep scrolling */
+      scrollbar-width: none;          /* Firefox */
+      -ms-overflow-style: none;       /* IE/Edge legacy */
+    }
+    .modalBody::-webkit-scrollbar{
+      width: 0;
+      height: 0;
+    }
+
+    .modalGrid{
+      display:grid;
+      gap: 12px;
+    }
+
+    .modalSection{
+      border: 1px solid var(--stroke);
+      background: var(--cardBg2);
+      border-radius: 14px;
+      padding: 12px;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.03) inset;
+    }
+    .modalSection h4{
+      margin: 0 0 6px;
+      font-size: 12px;
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+      color: var(--sectionTitle);
+    }
+    .modalSection p{
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.45;
+      color: var(--text);
+    }
+    .modalSection ul{
+      margin: 8px 0 0 18px;
+      padding: 0;
+      color: var(--text);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .modalRef{
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.35;
+      margin-top: 8px;
+    }
+
   </style>
 </head>
 
@@ -844,7 +899,11 @@
     </div>
 
     <!-- Top controls -->
+
+    <!-- Top controls -->
     <div id="toolbar">
+
+
       <div class="pill-select" id="cityControl" role="group" aria-label="City">
         <div class="pill-label">City</div>
         <div class="segmented" id="cityPills">
@@ -863,10 +922,28 @@
         </div>
       </div>
 
-      <button class="pill themeToggle" id="themeToggle" type="button" title="Toggle theme">
-        <span id="themeIcon" style="font-size:14px;">☾</span>
-        <span id="themeText" style="font-size:12px; font-weight:700;">Dark</span>
-      </button>
+      <div class="toolbarRight">
+
+        <button class="themeToggle topPill" id="themeToggle" type="button" title="Toggle theme">
+          <span id="themeIcon" style="font-size:14px;">☾</span>
+          <span id="themeText" style="font-size:12px; font-weight:700;">Dark</span>
+        </button>
+
+
+        <button class="overviewBtn topPill" id="overviewBtn" type="button" title="Dashboard overview" aria-label="Open dashboard overview">
+          Overview
+        </button>
+
+        <div class="pill-select topPill" id="langControl" role="group" aria-label="Language">
+          <span class="langIcon" aria-hidden="true">🌐</span>
+          <div class="pill-label" id="langLabel">Language</div>
+          <div class="segmented" id="langPills">
+            <button type="button" class="seg-btn active" aria-pressed="true" data-lang="en">EN</button>
+            <button type="button" class="seg-btn" aria-pressed="false" data-lang="de">DE</button>
+          </div>
+        </div>
+
+      </div>
     </div>
 
     <div id="content">
@@ -881,7 +958,6 @@
           <div id="selectedInfo" style="font-size:13px; font-weight:700;">All cities • 2024</div>
         </div>
 
-        <!-- ✅ NEW: switch-style layer controls -->
         <div class="card">
           <div class="ct">Layers</div>
 
@@ -890,7 +966,10 @@
             <div class="layerList">
               <div class="layerRow" data-toggle-row="lst">
                 <div class="layerLeft">
-                <span class="layerName">LST (°C)</span>
+                  <div class="layerNameWrap">
+                    <span class="layerName">LST (°C)</span>
+                    <button type="button" class="infoBtn" data-info="lst" aria-label="About LST (Land Surface Temperature)" title="Info"><svg class="infoIco" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="4" r="1.2" fill="currentColor"></circle><path d="M8 7v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg></button>
+                  </div>
                 </div>
                 <label class="switch" aria-label="Toggle LST">
                   <input class="layerSwitch" type="checkbox" data-layer="lst" />
@@ -900,7 +979,10 @@
 
               <div class="layerRow" data-toggle-row="suhi">
                 <div class="layerLeft">
-                  <span class="layerName">SUHI (°C)</span>
+                  <div class="layerNameWrap">
+                    <span class="layerName">SUHI (°C)</span>
+                    <button type="button" class="infoBtn" data-info="suhi" aria-label="About SUHI (Surface Urban Heat Island)" title="Info"><svg class="infoIco" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="4" r="1.2" fill="currentColor"></circle><path d="M8 7v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg></button>
+                  </div>
                 </div>
                 <label class="switch" aria-label="Toggle SUHI">
                   <input class="layerSwitch" type="checkbox" data-layer="suhi" />
@@ -909,13 +991,29 @@
               </div>
             </div>
 
+            <div class="layerRow" data-toggle-row="hotspots">
+  <div class="layerLeft">
+                  <div class="layerNameWrap">
+                    <span class="layerName">Hotspots</span>
+                    <button type="button" class="infoBtn" data-info="hotspots" aria-label="About Hotspots" title="Info"><svg class="infoIco" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="4" r="1.2" fill="currentColor"></circle><path d="M8 7v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg></button>
+                  </div>
+                </div>
+  <label class="switch" aria-label="Toggle Hotspots">
+    <input class="layerSwitch" type="checkbox" data-layer="hotspots" />
+    <span class="slider"></span>
+  </label>
+</div>
+
             <div class="layerDivider"></div>
 
             <div class="layerSectionTitle">Environmental Drivers</div>
             <div class="layerList">
               <div class="layerRow" data-toggle-row="ndvi">
                 <div class="layerLeft">
-                  <span class="layerName">Greenness</span>
+                  <div class="layerNameWrap">
+                    <span class="layerName">Greenness</span>
+                    <button type="button" class="infoBtn" data-info="ndvi" aria-label="About Greenness (NDVI)" title="Info"><svg class="infoIco" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="4" r="1.2" fill="currentColor"></circle><path d="M8 7v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg></button>
+                  </div>
                 </div>
                 <label class="switch" aria-label="Toggle NDVI">
                   <input class="layerSwitch" type="checkbox" data-layer="ndvi" />
@@ -925,7 +1023,10 @@
 
               <div class="layerRow" data-toggle-row="ndbi">
                 <div class="layerLeft">
-                  <span class="layerName">Built-up</span>
+                  <div class="layerNameWrap">
+                    <span class="layerName">Built-up</span>
+                    <button type="button" class="infoBtn" data-info="ndbi" aria-label="About Built-up (NDBI)" title="Info"><svg class="infoIco" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="4" r="1.2" fill="currentColor"></circle><path d="M8 7v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg></button>
+                  </div>
                 </div>
                 <label class="switch" aria-label="Toggle NDBI">
                   <input class="layerSwitch" type="checkbox" data-layer="ndbi" />
@@ -935,7 +1036,10 @@
 
               <div class="layerRow" data-toggle-row="ndwi">
                 <div class="layerLeft">
-                  <span class="layerName">Water Proximity</span>
+                  <div class="layerNameWrap">
+                    <span class="layerName">Water Proximity</span>
+                    <button type="button" class="infoBtn" data-info="ndwi" aria-label="About Water Proximity (NDWI/MNDWI)" title="Info"><svg class="infoIco" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="4" r="1.2" fill="currentColor"></circle><path d="M8 7v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg></button>
+                  </div>
                 </div>
                 <label class="switch" aria-label="Toggle NDWI">
                   <input class="layerSwitch" type="checkbox" data-layer="ndwi" />
@@ -945,7 +1049,10 @@
 
               <div class="layerRow" data-toggle-row="albedo">
                 <div class="layerLeft">
-                  <span class="layerName">Surface Albedo</span>
+                  <div class="layerNameWrap">
+                    <span class="layerName">Surface Albedo</span>
+                    <button type="button" class="infoBtn" data-info="albedo" aria-label="About Surface Albedo" title="Info"><svg class="infoIco" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="4" r="1.2" fill="currentColor"></circle><path d="M8 7v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg></button>
+                  </div>
                 </div>
                 <label class="switch" aria-label="Toggle Albedo">
                   <input class="layerSwitch" type="checkbox" data-layer="albedo" />
@@ -955,20 +1062,13 @@
 
               <div class="layerRow" data-toggle-row="lcz">
                 <div class="layerLeft">
-                  <span class="layerName">Local CLimate Zones (LCZ)</span>
+                  <div class="layerNameWrap">
+                    <span class="layerName">Local Climate Zones (LCZ)</span>
+                    <button type="button" class="infoBtn" data-info="lcz" aria-label="About Local Climate Zones (LCZ)" title="Info"><svg class="infoIco" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="4" r="1.2" fill="currentColor"></circle><path d="M8 7v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg></button>
+                  </div>
                 </div>
                 <label class="switch" aria-label="Toggle LCZ">
                   <input class="layerSwitch" type="checkbox" data-layer="lcz" />
-                  <span class="slider"></span>
-                </label>
-              </div>
-
-              <div class="layerRow" data-toggle-row="elevation">
-                <div class="layerLeft">
-                  <span class="layerName">Elevation</span>
-                </div>
-                <label class="switch" aria-label="Toggle Elevation">
-                  <input class="layerSwitch" type="checkbox" data-layer="elevation" />
                   <span class="slider"></span>
                 </label>
               </div>
@@ -980,7 +1080,10 @@
             <div class="layerList">
               <div class="layerRow" data-toggle-row="buildings3d">
                 <div class="layerLeft">
-                  <span class="layerName">3D Buildings</span>
+                  <div class="layerNameWrap">
+                    <span class="layerName">3D Buildings</span>
+                    <button type="button" class="infoBtn" data-info="buildings3d" aria-label="About 3D Buildings layer" title="Info"><svg class="infoIco" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="4" r="1.2" fill="currentColor"></circle><path d="M8 7v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg></button>
+                  </div>
                 </div>
                 <label class="switch" aria-label="Toggle 3D Buildings">
                   <input class="layerSwitch" type="checkbox" data-layer="buildings3d" />
@@ -988,19 +1091,18 @@
                 </label>
               </div>
             </div>
+          </div>
+        </div>
 
         <div class="card">
           <div class="ct">KPIs (placeholder)</div>
-          <div class="empty">
-            Charts / stats will appear here
-          </div>
+          <div class="empty">Charts / stats will appear here</div>
         </div>
       </aside>
 
       <main id="mapArea">
         <div id="cesiumContainer"></div>
 
-        <!-- AI Chat Toggle and Panel (integrated) -->
         <div id="chatToggle" title="Ask the AI Assistant" aria-label="Open AI Assistant" role="button">🤖</div>
 
         <div id="chatPanel" aria-label="AI Assistant panel" role="dialog" aria-modal="false">
@@ -1028,56 +1130,41 @@
     </div>
   </div>
 
+
+  <!-- =========================================================
+       Layer Info Modal (one modal, opened by per-layer info icons)
+       ========================================================= -->
+  <div id="infoModalOverlay" class="modalOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modalCard" role="document" aria-label="Layer information">
+      <div class="modalHeader">
+        <div class="modalTitleWrap">
+          <div class="modalTitle" id="infoModalTitle">Layer information</div>
+          <div class="modalSubtitle" id="infoModalSubtitle"></div>
+        </div>
+        <button type="button" class="modalCloseBtn" id="infoModalCloseBtn" aria-label="Close info">×</button>
+      </div>
+      <div class="modalBody">
+        <div class="modalGrid" id="infoModalContent"></div>
+      </div>
+    </div>
+  </div>
+
   <script>
     Cesium.Ion.defaultAccessToken =
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI2ODkyMTBkYy00ZWZhLTRiZTQtYWRkZi0wZmQxOWUyNmUyZTgiLCJpZCI6MzY2OTcxLCJpYXQiOjE3NzE1Mzc0MDh9.S7mUGUzu62Amq544e5YNF1s8lnYIwXSe3NzFBZe3zBU";
 
     const appFrameEl = document.getElementById("appFrame");
 
-    // Default Cesium widgets ON (search/home/basemap/mode/help/fullscreen)
-    const viewer = new Cesium.Viewer("cesiumContainer", {
-      timeline: false,
-      animation: false,
-
-      geocoder: true,
-      homeButton: true,
-      sceneModePicker: true,
-      baseLayerPicker: true,
-      navigationHelpButton: true,
-      fullscreenButton: true,
-      vrButton: false,
-
-      infoBox: false,
-      selectionIndicator: false,
-
-      fullscreenElement: appFrameEl
-    });
-
     // ===== Always top-down camera settings =====
     const TOPDOWN = { heading: 0.0, pitch: -Cesium.Math.PI_OVER_TWO, roll: 0.0 };
 
-    // Views (tweak heights anytime)
+    // Views (fallback only if boundary not yet loaded)
     const CITY_VIEWS = {
       ALL:       { lon: 7.50, lat: 51.43, height: 120000 },
       Essen:     { lon: 7.01, lat: 51.45, height: 45000  },
       Wuppertal: { lon: 7.17, lat: 51.26, height: 52000  },
       Soest:     { lon: 8.11, lat: 51.57, height: 65000  }
     };
-
-    function flyToCityTopDown(key){
-      const v = CITY_VIEWS[key] || CITY_VIEWS.ALL;
-      viewer.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(v.lon, v.lat, v.height),
-        orientation: TOPDOWN,
-        duration: 1.0
-      });
-    }
-
-    // Make HOME go to "ALL"
-    viewer.homeButton.viewModel.command.beforeExecute.addEventListener(function(e){
-      e.cancel = true;
-      flyToCityTopDown("ALL");
-    });
 
     // ===== Boundaries from Cesium ion =====
     const ASSETS = [
@@ -1086,71 +1173,305 @@
       { id: 4469166, name: "Soest",     color: Cesium.Color.RED }
     ];
 
-    const loadedByName = new Map();
-
-    async function addBoundaryFromIon(assetId, color, name) {
-      const resource = await Cesium.IonResource.fromAssetId(assetId);
-      const ds = await Cesium.GeoJsonDataSource.load(resource, { clampToGround: true });
-      ds.name = name;
-      viewer.dataSources.add(ds);
-
-      const now = Cesium.JulianDate.now();
-
-      for (const e of ds.entities.values) {
-        if (e.polygon) {
-          e.polygon.material = Cesium.Color.TRANSPARENT;
-          e.polygon.outline = false;
-
-          const h = e.polygon.hierarchy?.getValue(now);
-          if (h?.positions?.length) {
-            const closed = h.positions.concat([h.positions[0]]);
-            e.polyline = new Cesium.PolylineGraphics({
-              positions: closed,
-              width: 4,
-              material: color,
-              clampToGround: true
-            });
-          }
-        }
-
-        if (e.polyline) {
-          e.polyline.material = color;
-          e.polyline.width = 4;
-          e.polyline.clampToGround = true;
-        }
-      }
-
-      return ds;
-    }
+    // ===== 3D Buildings tilesets (ion Asset IDs) =====
+    const BUILDING_ASSET_IDS = {
+      Wuppertal: 4470590,
+      Essen: 4471126,
+      Soest: 4471123
+    };
 
     // ===== UI state =====
     const selectedInfo = document.getElementById("selectedInfo");
     let selectedCity = "ALL";
     let selectedYear = "2024";
 
+
+    // =========================================================
+    // LANGUAGE (EN/DE) — simple i18n for UI text + assistant
+    // =========================================================
+    const UI_STR = {
+      en: {
+        app_title: "Surface Urban Heat Island (SUHI) Germany",
+        app_subtitle: "Summer Daytime Heat patterns across Essen, Wuppertal & Soest",
+
+        lang_label: "Language",
+        city_label: "City",
+        year_label: "Year",
+        city_all: "All",
+        all_cities: "All cities",
+
+        controls_panel: "Controls Panel",
+        active: "active",
+        selected: "Selected",
+        layers: "Layers",
+        kpis_title: "KPIs (placeholder)",
+        kpis_empty: "Charts / stats will appear here",
+
+        heat_stressors: "Heat Stressors",
+        env_drivers: "Environmental Drivers",
+        morphometrics: "Urban Morphometrics",
+
+        layer_hotspots: "Hotspots",
+        layer_greenness: "Greenness",
+        layer_builtup: "Built-up",
+        layer_water: "Water Proximity",
+        layer_albedo: "Surface Albedo",
+        layer_buildings3d: "3D Buildings",
+
+        overview_btn: "Overview",
+        overview_title: "Dashboard overview",
+
+        theme_toggle: "Toggle theme",
+        theme_light: "Light",
+        theme_dark: "Dark",
+
+        assistant_toggle_title: "Ask the AI Assistant",
+        assistant_toggle_aria: "Open AI Assistant",
+        assistant_title: "AI Assistant",
+        assistant_typing: "Assistant is typing…",
+        close_chat: "Close chat",
+        ask_placeholder: "Ask anything.",
+        send: "Send",
+        quick_questions: "Quick questions",
+        chat_greeting: "Hi! I’m your assistant — ask me anything you’d like to explore.",
+
+        modal_what: "What it is",
+        modal_units: "Units",
+        modal_interpret: "How to interpret",
+        modal_limitations: "Limitations",
+        modal_refs: "Key references",
+        references_prefix: "References: ",
+
+        ask_term_default: "Ask me a term or concept to explain.",
+        no_match: "I couldn’t find a matching Wikipedia page for that.",
+        cant_retrieve_summary: "I couldn’t retrieve a Wikipedia summary right now.",
+        ambiguous: "That term is ambiguous on Wikipedia. Try a more specific phrase.",
+        wiki_timeout: "Wikipedia request timed out.",
+        wiki_ratelimit: "Wikipedia is rate-limiting requests. Please try again in a moment.",
+        wiki_unreachable: "I couldn’t reach Wikipedia right now.",
+        wiki_tip: "Tip: check your internet connection and keep the dashboard running via Live Server.",
+        source_label: "Source: ",
+        possible_pages: "Possible pages:"
+      },
+      de: {
+        app_title: "Oberflächen‑Stadtwärmeinsel (SUHI) Deutschland",
+        app_subtitle: "Sommerliche Tages‑Hitzemuster für Essen, Wuppertal & Soest",
+
+        lang_label: "Sprache",
+        city_label: "Stadt",
+        year_label: "Jahr",
+        city_all: "Alle",
+        all_cities: "Alle Städte",
+
+        controls_panel: "Steuerung",
+        active: "aktiv",
+        selected: "Auswahl",
+        layers: "Ebenen",
+        kpis_title: "KPIs (Platzhalter)",
+        kpis_empty: "Diagramme / Kennzahlen erscheinen hier",
+
+        heat_stressors: "Hitzetreiber",
+        env_drivers: "Umweltfaktoren",
+        morphometrics: "Stadtmorphometrie",
+
+        layer_hotspots: "Hotspots",
+        layer_greenness: "Vegetation",
+        layer_builtup: "Bebauung",
+        layer_water: "Wassernähe",
+        layer_albedo: "Albedo",
+        layer_buildings3d: "3D‑Gebäude",
+
+        overview_btn: "Überblick",
+        overview_title: "Dashboard‑Überblick",
+
+        theme_toggle: "Theme wechseln",
+        theme_light: "Hell",
+        theme_dark: "Dunkel",
+
+        assistant_toggle_title: "KI‑Assistent fragen",
+        assistant_toggle_aria: "KI‑Assistent öffnen",
+        assistant_title: "KI‑Assistent",
+        assistant_typing: "Assistent schreibt…",
+        close_chat: "Chat schließen",
+        ask_placeholder: "Frage stellen.",
+        send: "Senden",
+        quick_questions: "Schnelle Fragen",
+        chat_greeting: "Hi! Ich bin dein Assistent — frag mich gern nach Begriffen und Konzepten.",
+
+        modal_what: "Was es ist",
+        modal_units: "Einheiten",
+        modal_interpret: "Interpretation",
+        modal_limitations: "Einschränkungen",
+        modal_refs: "Wichtige Quellen",
+        references_prefix: "Quellen: ",
+
+        ask_term_default: "Frag mich nach einem Begriff oder Konzept.",
+        no_match: "Ich konnte dazu keine passende Wikipedia‑Seite finden.",
+        cant_retrieve_summary: "Ich konnte gerade keine Wikipedia‑Zusammenfassung abrufen.",
+        ambiguous: "Der Begriff ist auf Wikipedia mehrdeutig. Bitte formuliere spezifischer.",
+        wiki_timeout: "Wikipedia‑Anfrage hat zu lange gedauert.",
+        wiki_ratelimit: "Wikipedia begrenzt gerade Anfragen. Bitte gleich nochmal versuchen.",
+        wiki_unreachable: "Wikipedia ist gerade nicht erreichbar.",
+        wiki_tip: "Tipp: Internetverbindung prüfen und das Dashboard über Live Server laufen lassen.",
+        source_label: "Quelle: ",
+        possible_pages: "Mögliche Seiten:"
+      }
+    };
+
+    let currentLang =
+      localStorage.getItem("lang") ||
+      (((navigator.language || "en").toLowerCase().startsWith("de")) ? "de" : "en");
+
+    function tr(key){
+      return (UI_STR[currentLang] && UI_STR[currentLang][key]) || UI_STR.en[key] || key;
+    }
+
+    function getQuickQuestions(){
+      return (currentLang === "de") ? [
+        "Was ist LST?",
+        "Was ist UHI?",
+        "Was ist SUHI?",
+        "Was ist NDVI?",
+        "Was ist NDWI?",
+        "Was ist Albedo?",
+        "Was ist Fernerkundung?",
+        "Was ist GIS?",
+        "Was ist eine Hotspot‑Analyse?",
+        "Was ist ein Cold Spot?"
+      ] : [
+        "What is LST?",
+        "What is UHI?",
+        "What is SUHI?",
+        "What is NDVI?",
+        "What is NDWI?",
+        "What is albedo?",
+        "What is remote sensing?",
+        "What is GIS?",
+        "What is a hotspot analysis?",
+        "What is a cold spot?"
+      ];
+    }
+
+    function syncLangPills(){
+      const pills = document.getElementById("langPills");
+      if (!pills) return;
+      pills.querySelectorAll("button[data-lang]").forEach(b => {
+        const isActive = b.dataset.lang === currentLang;
+        b.classList.toggle("active", isActive);
+        b.setAttribute("aria-pressed", isActive ? "true" : "false");
+      });
+      const langLabel = document.getElementById("langLabel");
+      if (langLabel) langLabel.textContent = tr("lang_label");
+    }
+
+    function applyLanguage(){
+      // Document language
+      document.documentElement.setAttribute("lang", currentLang);
+
+      // Header
+      const titleEl = document.querySelector(".pillTitle");
+      const subEl = document.querySelector(".pillSub");
+      if (titleEl) titleEl.textContent = tr("app_title");
+      if (subEl) subEl.textContent = tr("app_subtitle");
+
+      // Toolbar labels
+      const cityLabel = document.querySelector("#cityControl .pill-label");
+      const yearLabel = document.querySelector("#yearControl .pill-label");
+      if (cityLabel) cityLabel.textContent = tr("city_label");
+      if (yearLabel) yearLabel.textContent = tr("year_label");
+
+      const allBtn = document.querySelector('#cityPills button[data-city="ALL"]');
+      if (allBtn) allBtn.textContent = tr("city_all");
+
+      // Left panel
+      const panelTitle = document.querySelector("#leftPanel .panelHeader .h");
+      if (panelTitle) panelTitle.textContent = tr("controls_panel");
+      const dot = document.querySelector("#leftPanel .panelHeader .dot");
+      if (dot) dot.setAttribute("title", tr("active"));
+
+      const cts = document.querySelectorAll("#leftPanel .card .ct");
+      if (cts && cts.length >= 3) {
+        cts[0].textContent = tr("selected");
+        cts[1].textContent = tr("layers");
+        cts[2].textContent = tr("kpis_title");
+      }
+      const empty = document.querySelector("#leftPanel .empty");
+      if (empty) empty.textContent = tr("kpis_empty");
+
+      // Layer section titles (by order)
+      const secTitles = document.querySelectorAll(".layerSectionTitle");
+      if (secTitles && secTitles.length >= 3) {
+        secTitles[0].textContent = tr("heat_stressors");
+        secTitles[1].textContent = tr("env_drivers");
+        secTitles[2].textContent = tr("morphometrics");
+      }
+
+      // Layer names
+      const setLayerName = (key, labelKey) => {
+        const el = document.querySelector(`.layerRow[data-toggle-row="${key}"] .layerName`);
+        if (el) el.textContent = tr(labelKey);
+      };
+      setLayerName("hotspots", "layer_hotspots");
+      setLayerName("ndvi", "layer_greenness");
+      setLayerName("ndbi", "layer_builtup");
+      setLayerName("ndwi", "layer_water");
+      setLayerName("albedo", "layer_albedo");
+      setLayerName("buildings3d", "layer_buildings3d");
+
+      // Overview + Theme buttons
+      const overviewBtn = document.getElementById("overviewBtn");
+      if (overviewBtn) {
+        overviewBtn.textContent = tr("overview_btn");
+        overviewBtn.title = tr("overview_title");
+        overviewBtn.setAttribute("aria-label", tr("overview_title"));
+      }
+
+      const themeToggle = document.getElementById("themeToggle");
+      if (themeToggle) themeToggle.title = tr("theme_toggle");
+
+      // Chat UI
+      const chatToggle = document.getElementById("chatToggle");
+      if (chatToggle) {
+        chatToggle.title = tr("assistant_toggle_title");
+        chatToggle.setAttribute("aria-label", tr("assistant_toggle_aria"));
+      }
+      const chatTitleStrong = document.querySelector("#chatHeader .chatTitle strong");
+      if (chatTitleStrong) chatTitleStrong.textContent = tr("assistant_title");
+      const chatCloseBtn = document.getElementById("chatCloseBtn");
+      if (chatCloseBtn) chatCloseBtn.setAttribute("aria-label", tr("close_chat"));
+
+      const chatText = document.getElementById("chatText");
+      if (chatText) chatText.placeholder = tr("ask_placeholder");
+      const chatSendBtn = document.getElementById("chatSendBtn");
+      if (chatSendBtn) chatSendBtn.textContent = tr("send");
+      // Quick questions block (only refresh if it already exists)
+      if (document.getElementById("quickQsBlock") && typeof appendQuickQuestions === "function") {
+        appendQuickQuestions(getQuickQuestions());
+      }
+    }
+
+    function setLanguage(lang){
+      currentLang = (lang === "de") ? "de" : "en";
+      localStorage.setItem("lang", currentLang);
+      syncLangPills();
+      applyLanguage();
+
+      // Refresh language-dependent dynamic labels
+      if (typeof applyTheme === "function") {
+        const theme = document.documentElement.getAttribute("data-theme") || "dark";
+        applyTheme(theme);
+      }
+      if (typeof updateSelectedLabel === "function") updateSelectedLabel();
+
+      // If modal is open, re-render current content in new language
+      const overlay = document.getElementById("infoModalOverlay");
+      if (overlay && overlay.classList.contains("open") && window.__lastInfoKey) {
+        openInfoModal(window.__lastInfoKey);
+      }
+    }
     function updateSelectedLabel(){
       selectedInfo.textContent =
-        (selectedCity === "ALL" ? "All cities" : selectedCity) + " • " + selectedYear;
-    }
-
-    function applyBoundaryVisibility(){
-      if (loadedByName.size === 0) return;
-
-      if (selectedCity === "ALL") {
-        for (const [, ds] of loadedByName) ds.show = true;
-        return;
-      }
-      for (const [name, ds] of loadedByName) ds.show = (name === selectedCity);
-    }
-
-    function handleSelectionChange(){
-      updateSelectedLabel();
-      applyBoundaryVisibility();
-      flyToCityTopDown(selectedCity);
-      console.log("Selection:", selectedCity, selectedYear);
-
-      // OPTIONAL (future): if you swap raster URLs by year/city, do it here.
-      // refreshRasterSources(selectedCity, selectedYear);
+        (selectedCity === "ALL" ? tr("all_cities") : selectedCity) + " • " + selectedYear;
     }
 
     function setupPills(containerId, dataKey, onChange){
@@ -1170,48 +1491,19 @@
       });
     }
 
-    setupPills("cityPills", "city", (city) => {
-      selectedCity = city;
-      handleSelectionChange();
-    });
-
-    setupPills("yearPills", "year", (year) => {
-      selectedYear = year;
-      handleSelectionChange();
-    });
-
-    // Load boundaries, then enforce visibility
-    (async () => {
-      try {
-        for (const a of ASSETS) {
-          const ds = await addBoundaryFromIon(a.id, a.color, a.name);
-          loadedByName.set(a.name, ds);
-        }
-        applyBoundaryVisibility();
-      } catch (err) {
-        console.error("Boundary load failed:", err);
-      }
-    })();
-
-    handleSelectionChange();
-
     // =========================================================
-    // SWITCH LAYER TOGGLES (on/off like your screenshot)
+    // SWITCH LAYER TOGGLES
     // =========================================================
-    // Register your real Cesium objects here later:
-    // - ImageryLayer: viewer.imageryLayers.addImageryProvider(...)
-    // - DataSource: viewer.dataSources.add(...)
-    // - 3DTileset: viewer.scene.primitives.add(...)
     const LAYER_REGISTRY = {
       lst: null,
       suhi: null,
+      hotspots: null,
       ndvi: null,
       ndbi: null,
       ndwi: null,
       albedo: null,
       lcz: null,
       buildings3d: null
-      // elevation handled via terrainProvider toggle below
     };
 
     function setVisible(obj, on){
@@ -1228,82 +1520,915 @@
       localStorage.setItem("layerState", JSON.stringify(state));
     }
 
-    async function toggleElevation(on){
-      try{
-        if (on) {
-          if (Cesium.createWorldTerrainAsync) {
-            viewer.terrainProvider = await Cesium.createWorldTerrainAsync();
-          } else {
-            viewer.terrainProvider = Cesium.createWorldTerrain();
-          }
-        } else {
-          viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
-        }
-      } catch (e) {
-        console.error("Elevation toggle failed:", e);
-        viewer.terrainProvider = new Cesium.EllipsoidTerrainProvider();
-      }
-    }
-
-    // Click anywhere on the row -> toggles the switch
-    document.querySelectorAll(".layerRow").forEach((row) => {
-      row.addEventListener("click", (e) => {
-        // If user clicked directly on the input, let default happen
-        if (e.target && (e.target.tagName === "INPUT" || e.target.classList.contains("slider"))) return;
-
-        const key = row.getAttribute("data-toggle-row");
-        const cb = document.querySelector(`.layerSwitch[data-layer="${key}"]`);
-        if (!cb) return;
-        cb.checked = !cb.checked;
-        cb.dispatchEvent(new Event("change", { bubbles: true }));
-      });
-    });
-
-    // Initialize switches from localStorage + wire change events
-    document.querySelectorAll(".layerSwitch").forEach((cb) => {
-      const key = cb.dataset.layer;
-      const state = getLayerState();
-      cb.checked = !!state[key];
-
-      // Apply initial state
-      if (key === "elevation") {
-        toggleElevation(cb.checked);
-      } else {
-        setVisible(LAYER_REGISTRY[key], cb.checked);
-      }
-
-      cb.addEventListener("change", async (e) => {
-        const on = e.target.checked;
-
-        const s = getLayerState();
-        s[key] = on;
-        setLayerState(s);
-
-        if (key === "elevation") {
-          await toggleElevation(on);
-          return;
-        }
-
-        const ref = LAYER_REGISTRY[key];
-        if (!ref) {
-          console.warn(`Layer "${key}" is not registered yet. Once you add it, the switch will control it.`);
-          return;
-        }
-        setVisible(ref, on);
-      });
-    });
-
-    // Helper: call this after you create a layer
     function registerLayer(key, cesiumObj){
       LAYER_REGISTRY[key] = cesiumObj;
       const state = getLayerState();
       setVisible(cesiumObj, !!state[key]);
     }
 
-    // Expose for debugging in console:
-    window.viewer = viewer;
-    window.registerLayer = registerLayer;
-    window.LAYER_REGISTRY = LAYER_REGISTRY;
+    
+    // =========================================================
+    // INFO MODAL CONTENT (basic placeholders — expand later)
+    // =========================================================
+    const LAYER_INFO = {
+      overview: {
+        title: "Dashboard overview",
+        subtitle: "Explore Surface Urban Heat Island (SUHI) patterns and drivers",
+        what:
+          "This dashboard helps you explore surface heat patterns (LST and SUHI) and related environmental/context layers for selected German cities and years. Use it to compare where surfaces are hotter or cooler, and how factors like vegetation, built-up intensity, water influence, albedo, LCZ classes, and 3D urban form relate to those patterns.",
+        units: "Different layers use different units (°C for LST/SUHI, unitless indices for greenness/built-up/albedo, categorical classes for LCZ).",
+        interpret: [
+          "Choose a City and Year from the pills at the top.",
+          "Turn layers on/off from the Controls Panel on the left; click the small info icon next to any layer to read definitions and limitations.",
+          "Use the mouse/trackpad to move around the map and zoom in/out to inspect neighbourhood-scale patterns.",
+          "Compare layers together (e.g., SUHI with Greenness or Built-up) to understand likely drivers."
+        ],
+        limitations: [
+          "LST and SUHI are surface-based metrics and can differ from air-temperature heat exposure experienced by people.",
+          "Values and patterns depend on acquisition timing, season, cloud screening, and spatial resolution; interpret maps as comparative patterns rather than exact point measurements.",
+          "Hotspot results depend on the chosen method and parameters; treat them as indicators to investigate with additional context."
+        ],
+        refs: [
+          "Voogt & Oke (2003) – Thermal remote sensing of urban climates.",
+          "Stewart & Oke (2012) – Local Climate Zones framework.",
+          "Weng (2009) – Thermal infrared remote sensing for urban climate studies."
+        ]
+      },
+
+      lst: {
+        title: "LST (°C)",
+        subtitle: "Land Surface Temperature (surface ‘skin’ temperature)",
+        what:
+          "LST represents the radiometric temperature of the Earth’s surface (roofs, asphalt, soil, vegetation) retrieved from thermal infrared measurements. It is not the same as near‑surface air temperature.",
+        units: "Degrees Celsius (°C).",
+        interpret: [
+          "Higher LST often indicates hotter impervious surfaces under strong solar radiation (e.g., asphalt/roofs).",
+          "Vegetation and water typically show lower daytime LST due to shading and evapotranspiration / high heat capacity.",
+          "Compare LST patterns together with land cover and time of day/season."
+        ],
+        limitations: [
+          "Strongly affected by time of acquisition, clouds/haze, and atmospheric correction assumptions.",
+          "Topography, shadowing, and view angle can influence values in complex terrain and urban canyons.",
+          "LST is a surface metric; human heat exposure depends also on air temperature, humidity, wind and radiation."
+        ],
+        refs: [
+          "Voogt & Oke (2003) – Thermal remote sensing of urban climates.",
+          "Weng (2009) – Thermal infrared remote sensing for urban climate studies."
+        ]
+      },
+
+      suhi: {
+        title: "SUHI (°C)",
+        subtitle: "Surface Urban Heat Island intensity (urban vs. rural surface temperature)",
+        what:
+          "SUHI describes how much warmer (or cooler) urban surfaces are compared to a rural reference, using LST. It is commonly expressed as an urban–rural temperature difference.",
+        units: "Degrees Celsius (°C) difference.",
+        interpret: [
+          "Positive SUHI means urban surfaces are hotter than the rural reference.",
+          "Spatial SUHI patterns often relate to imperviousness, vegetation cover, building form, and moisture availability.",
+          "Interpret SUHI alongside the chosen ‘urban’ and ‘rural’ definitions (e.g., LCZ-based)."
+        ],
+        limitations: [
+          "Depends on how ‘urban’ and ‘rural’ areas are defined and the chosen reference area.",
+          "Surface‑based UHI differs from canopy/air‑temperature UHI; magnitudes may not match.",
+          "Day/night and seasonal differences can be large."
+        ],
+        refs: [
+          "Oke (1982) – Urban heat island review (conceptual foundations).",
+          "Stewart & Oke (2012) – Local Climate Zones framework for consistent urban–rural comparisons."
+        ]
+      },
+
+      hotspots: {
+        title: "Hotspots",
+        subtitle: "Areas with unusually high values relative to surroundings",
+        what:
+          "Hotspots highlight locations that stand out as high values compared to their local neighborhood (e.g., high SUHI or high LST). In research this is often derived using local spatial statistics or thresholding.",
+        units: "Depends on the method (e.g., z‑scores / p‑values, or °C thresholds).",
+        interpret: [
+          "Hotspots can indicate persistent heat‑risk locations such as dense built-up areas with low vegetation.",
+          "Use hotspots together with context layers (NDVI/NDBI/LCZ, proximity to water) to interpret drivers.",
+          "If hotspots are statistical, they reflect clustering, not just high absolute values."
+        ],
+        limitations: [
+          "Results depend on the method and parameters (neighborhood distance/bandwidth, multiple testing, thresholds).",
+          "Edge effects and irregular sampling can bias hotspot detection.",
+          "Hotspots are not automatically ‘danger’ — combine with population/exposure information for risk."
+        ],
+        refs: [
+          "Getis & Ord (1992); Ord & Getis (1995) – Local spatial association / Gi* hotspot statistics."
+        ]
+      },
+
+      ndvi: {
+        title: "Greenness",
+        subtitle: "NDVI – Normalized Difference Vegetation Index",
+        what:
+          "NDVI is a spectral index that contrasts near‑infrared and red reflectance to indicate vegetation presence and vigor. Higher NDVI generally implies more green vegetation.",
+        units: "Unitless index (typically −1 to +1).",
+        interpret: [
+          "Higher NDVI often corresponds to parks, forests, and healthy vegetation; lower NDVI to built-up, bare soil or water.",
+          "Vegetation can reduce daytime surface temperatures via shading and evapotranspiration.",
+          "Compare NDVI seasonally; values vary strongly with phenology."
+        ],
+        limitations: [
+          "Saturates in dense vegetation and can be influenced by soil background at low vegetation cover.",
+          "Clouds, haze, and shadows can reduce NDVI if not masked properly.",
+          "Different sensors / processing chains can yield slightly different values."
+        ],
+        refs: [
+          "Tucker (1979) – Original NDVI formulation and applications.",
+          "Huete et al. (2002) – Vegetation indices overview (incl. limitations)."
+        ]
+      },
+
+      ndbi: {
+        title: "Built-up",
+        subtitle: "NDBI – Normalized Difference Built-up Index",
+        what:
+          "NDBI is a spectral index that uses shortwave infrared and near‑infrared reflectance to emphasize built-up / impervious surfaces in many landscapes.",
+        units: "Unitless index (often −1 to +1).",
+        interpret: [
+          "Higher NDBI often indicates impervious/built surfaces; lower values often indicate vegetation or water.",
+          "Built-up intensity is frequently associated with higher daytime LST and stronger SUHI.",
+          "Use together with NDVI and water indices for better interpretation."
+        ],
+        limitations: [
+          "Can confuse bright bare soil or some dry materials with built-up surfaces.",
+          "Sensitive to moisture and seasonal conditions; thresholds are not universal.",
+          "Best interpreted as a relative indicator, not a perfect built-up map."
+        ],
+        refs: [
+          "Zha, Gao & Ni (2003) – NDBI method for built-up area mapping."
+        ]
+      },
+
+      ndwi: {
+        title: "Water Proximity",
+        subtitle: "Water presence/proximity indicator (NDWI/MNDWI-style information)",
+        what:
+          "This layer represents water influence, commonly derived from water indices (e.g., NDWI/MNDWI) and/or distance to water bodies. Water can moderate local surface temperatures.",
+        units: "Depends on implementation (unitless index and/or distance units).",
+        interpret: [
+          "Water bodies often show lower daytime LST and can cool nearby areas, especially with airflow.",
+          "Use with LST/SUHI to understand where blue infrastructure may reduce heat.",
+          "If distance-based, smaller values mean closer proximity to water."
+        ],
+        limitations: [
+          "Water indices can be affected by shadows, dark surfaces, and turbidity; thresholds vary.",
+          "Small or narrow waterways may be missed at coarser resolutions.",
+          "Cooling impact depends on meteorology, size of water body, and surrounding morphology."
+        ],
+        refs: [
+          "McFeeters (1996) – NDWI for water feature extraction.",
+          "Xu (2006) – MNDWI improving open-water extraction in built-up areas."
+        ]
+      },
+
+      albedo: {
+        title: "Surface Albedo",
+        subtitle: "Reflectivity of the surface (shortwave)",
+        what:
+          "Albedo is the fraction of incoming sunlight reflected by a surface. Brighter surfaces generally have higher albedo and can absorb less solar energy in daytime.",
+        units: "Unitless fraction (0–1) or percent.",
+        interpret: [
+          "Higher albedo surfaces often heat less under sun, which can reduce daytime LST in some contexts.",
+          "Combine with land cover: high albedo does not always mean ‘cool’ if the surface is dry and lacks evapotranspiration.",
+          "Albedo is especially relevant when comparing roofing materials, pavements, and bare soils."
+        ],
+        limitations: [
+          "Depends on sun angle, atmospheric effects, and how broadband albedo is estimated from reflectance bands.",
+          "Seasonal changes (e.g., wetness) and aging of surfaces can change albedo.",
+          "Urban shading and 3D geometry complicate albedo interpretation at neighborhood scale."
+        ],
+        refs: [
+          "Liang (2001) – Narrowband-to-broadband albedo methods and remote sensing."
+        ]
+      },
+
+      lcz: {
+        title: "Local Climate Zones (LCZ)",
+        subtitle: "Standardized urban/rural classes based on built form and land cover",
+        what:
+          "LCZs classify areas into types (e.g., compact high‑rise, open low‑rise, dense trees, water) using surface cover and urban structure. They enable more consistent comparisons between cities and neighborhoods.",
+        units: "Categorical classes (LCZ 1–17, plus water class).",
+        interpret: [
+          "Built LCZ classes often show higher daytime LST than natural classes, but patterns vary by season and moisture.",
+          "Use LCZ to define ‘urban’ and ‘rural’ reference areas for SUHI calculations.",
+          "LCZ helps compare ‘like with like’ across different cities."
+        ],
+        limitations: [
+          "Quality depends on the input data, training/labeling, and mapping resolution.",
+          "Boundaries are generalized; mixed pixels and transitional areas are common.",
+          "LCZ describes typical structure/cover, not every micro‑site condition."
+        ],
+        refs: [
+          "Stewart & Oke (2012) – LCZ concept and definitions."
+        ]
+      },
+
+      buildings3d: {
+        title: "3D Buildings",
+        subtitle: "3D representation of urban form (visual + analysis support)",
+        what:
+          "3D buildings visualize the urban fabric and can support interpretation of heat patterns through urban geometry (height, density, street canyons), which influences shading, ventilation, and heat storage.",
+        units: "Geometry (meters for heights where available).",
+        interpret: [
+          "Dense and tall building areas can retain heat and reduce nighttime cooling, but may also create daytime shade depending on geometry.",
+          "Use 3D context to interpret hotspots and the role of morphology.",
+          "When attributes exist, morphometrics (height, floor area, sky view factor proxies) can be derived."
+        ],
+        limitations: [
+          "Visual 3D does not automatically mean accurate physical parameters; height/roof details depend on the source dataset.",
+          "Terrain and vertical datum mismatches can cause offsets if not handled consistently.",
+          "Urban climate effects depend on more than buildings alone (materials, vegetation, moisture, wind)."
+        ],
+        refs: [
+          "Oke et al. (2017) – Urban Climate concepts and the role of urban form (overview)."
+        ]
+      }
+    };
+
+    // --- German layer text (short + clear; falls back to EN if a key is missing) ---
+    const LAYER_INFO_DE = {
+      overview: {
+        title: "Dashboard‑Überblick",
+        subtitle: "SUHI‑Muster und mögliche Treiber erkunden",
+        what:
+          "Dieses Dashboard unterstützt dich dabei, Oberflächen‑Hitzemuster (LST und SUHI) sowie begleitende Umwelt‑ und Kontextlayer für ausgewählte Städte und Jahre zu erkunden. So kannst du vergleichen, wo Oberflächen heißer/kühler sind und wie Vegetation, Bebauung, Wasser, Albedo, LCZ‑Klassen und die 3D‑Stadtform damit zusammenhängen können.",
+        units:
+          "Je nach Layer: °C (LST/SUHI), dimensionslose Indizes (z. B. NDVI/NDBI/Albedo) oder kategoriale Klassen (LCZ).",
+        interpret: [
+          "Wähle oben Stadt und Jahr.",
+          "Schalte Ebenen links ein/aus; klicke auf das Info‑Symbol für Definitionen und Hinweise.",
+          "Zoome hinein, um Nachbarschaftsmuster zu sehen, und vergleiche Layer (z. B. SUHI vs. Vegetation/Bebauung)."
+        ],
+        limitations: [
+          "LST/SUHI sind oberflächenbasiert und unterscheiden sich von der Lufttemperatur‑Belastung für Menschen.",
+          "Muster hängen stark von Aufnahmezeitpunkt, Saison, Wolkenmaskierung und Auflösung ab – eher als relative Muster interpretieren.",
+          "Hotspots hängen von Methode/Parametern ab und sind Hinweise zur weiteren Untersuchung."
+        ],
+        refs: [
+          "Voogt & Oke (2003) – Thermal remote sensing of urban climates.",
+          "Stewart & Oke (2012) – Local Climate Zones framework.",
+          "Weng (2009) – Thermal infrared remote sensing for urban climate studies."
+        ]
+      },
+
+      lst: {
+        title: "LST (°C)",
+        subtitle: "Landoberflächentemperatur (‚Skin‘‑Temperatur)",
+        what:
+          "LST ist die aus thermalen Satellitenmessungen abgeleitete Temperatur der Oberfläche (Dächer, Asphalt, Boden, Vegetation). Sie ist nicht identisch mit der bodennahen Lufttemperatur.",
+        units: "Grad Celsius (°C).",
+        interpret: [
+          "Hohe LST tritt häufig auf stark versiegelten Flächen bei starker Sonneneinstrahlung auf.",
+          "Vegetation und Wasser sind tagsüber oft kühler (Schatten, Evapotranspiration bzw. hohe Wärmekapazität).",
+          "Immer zusammen mit Landbedeckung sowie Zeitpunkt/Saison interpretieren."
+        ],
+        limitations: [
+          "Stark abhängig von Aufnahmezeitpunkt, Wolken/Atmosphäre und Korrekturen.",
+          "Topographie, Schatten und Sichtgeometrie können Werte beeinflussen.",
+          "Für Hitzebelastung sind zusätzlich Lufttemperatur, Feuchte, Wind und Strahlung wichtig."
+        ],
+        refs: [
+          "Voogt & Oke (2003).",
+          "Weng (2009)."
+        ]
+      },
+
+      suhi: {
+        title: "SUHI (°C)",
+        subtitle: "Oberflächen‑Stadtwärmeinsel (Stadt vs. Umland)",
+        what:
+          "SUHI beschreibt den Temperaturunterschied der Oberflächen zwischen städtischen und ländlichen Referenzflächen (basierend auf LST).",
+        units: "Temperaturdifferenz in °C.",
+        interpret: [
+          "Positiver SUHI: städtische Oberflächen sind wärmer als die Referenz.",
+          "Muster hängen oft mit Versiegelung, Vegetation, Stadtform und Feuchte zusammen.",
+          "Beachte, wie ‚urban‘/‚rural‘ definiert wurde (z. B. LCZ‑basiert)."
+        ],
+        limitations: [
+          "Stark abhängig von der Wahl/Definition der Referenzflächen.",
+          "Oberflächen‑UHI unterscheidet sich vom Lufttemperatur‑UHI; Größenordnungen können abweichen.",
+          "Tag/Nacht und saisonale Unterschiede können groß sein."
+        ],
+        refs: [
+          "Oke (1982).",
+          "Stewart & Oke (2012)."
+        ]
+      },
+
+      hotspots: {
+        title: "Hotspots",
+        subtitle: "Orte mit ungewöhnlich hohen Werten im lokalen Umfeld",
+        what:
+          "Hotspots markieren Bereiche, die im Vergleich zu ihrer Nachbarschaft auffällig hohe Werte zeigen (z. B. hohe SUHI/LST). Häufig werden lokale räumliche Statistiken (z. B. Gi*) oder Schwellenwerte genutzt.",
+        units: "Methodenabhängig (z. B. z‑Scores/p‑Werte oder °C‑Schwellen).",
+        interpret: [
+          "Kann auf potenziell hitzerelevante Orte hinweisen (dichte Bebauung, wenig Vegetation).",
+          "Zusammen mit NDVI/NDBI/LCZ und Wasser interpretieren.",
+          "Bei statistischen Hotspots geht es um Cluster, nicht nur um absolute Maxima."
+        ],
+        limitations: [
+          "Ergebnis hängt von Methode/Parametern ab (Nachbarschaft, Bandbreite, Schwellen).",
+          "Randeffekte können die Analyse beeinflussen.",
+          "Hotspot ≠ Risiko: Für Risiko braucht man Exposition (Bevölkerung, Nutzung etc.)."
+        ],
+        refs: [
+          "Getis & Ord (1992); Ord & Getis (1995)."
+        ]
+      },
+
+      ndvi: {
+        title: "Vegetation",
+        subtitle: "NDVI – Normalized Difference Vegetation Index",
+        what:
+          "NDVI ist ein Spektralindex (NIR vs. Rot) als Indikator für Vegetationsbedeckung und Vitalität. Höhere Werte bedeuten meist mehr/gesündere Vegetation.",
+        units: "Dimensionslos (typisch −1 bis +1).",
+        interpret: [
+          "Hohe NDVI‑Werte: Parks/Wälder; niedrige: Bebauung, Boden oder Wasser.",
+          "Vegetation kann tagsüber Oberflächen kühlen (Schatten + Evapotranspiration).",
+          "Stark saisonal – immer mit der Jahreszeit vergleichen."
+        ],
+        limitations: [
+          "Sättigung in dichter Vegetation; Bodenhintergrund kann Werte beeinflussen.",
+          "Wolken/Schatten können NDVI verfälschen, wenn nicht sauber maskiert.",
+          "Sensor/Prozessierung kann leichte Unterschiede erzeugen."
+        ],
+        refs: [
+          "Tucker (1979).",
+          "Huete et al. (2002)."
+        ]
+      },
+
+      ndbi: {
+        title: "Bebauung",
+        subtitle: "NDBI – Normalized Difference Built‑up Index",
+        what:
+          "NDBI nutzt SWIR und NIR, um in vielen Landschaften bebaute/versiegelte Flächen hervorzuheben.",
+        units: "Dimensionslos (oft −1 bis +1).",
+        interpret: [
+          "Höhere NDBI‑Werte deuten häufig auf versiegelte/bebaute Flächen hin.",
+          "Stärker versiegelte Bereiche sind oft mit höherer LST und stärkerem SUHI verbunden.",
+          "Am besten zusammen mit NDVI und Wasser‑Indizes interpretieren."
+        ],
+        limitations: [
+          "Helle, trockene Böden können mit Bebauung verwechselt werden.",
+          "Feuchte/Saison beeinflussen Werte; Schwellen sind nicht universell.",
+          "Eher relativer Indikator als perfekte Bebauungskarte."
+        ],
+        refs: [
+          "Zha, Gao & Ni (2003)."
+        ]
+      },
+
+      ndwi: {
+        title: "Wassernähe",
+        subtitle: "Wassereinfluss (NDWI/MNDWI‑ähnlich) oder Distanz zu Wasser",
+        what:
+          "Dieser Layer beschreibt Wasserpräsenz bzw. den potenziellen Einfluss von Wasserflächen (z. B. über NDWI/MNDWI und/oder Distanz). Wasser kann Oberflächenhitze lokal dämpfen.",
+        units: "Je nach Umsetzung: Index (dimensionslos) und/oder Distanz (m).",
+        interpret: [
+          "Wasserflächen sind tagsüber oft kühler und können umliegende Bereiche mitkühlen.",
+          "Nutze den Layer mit LST/SUHI, um blaue Infrastruktur zu beurteilen.",
+          "Bei Distanz‑Layern: kleinere Werte = näher an Wasser."
+        ],
+        limitations: [
+          "Wasserindizes hängen von Schatten, dunklen Oberflächen und Trübung ab; Schwellen variieren.",
+          "Schmale Gewässer können bei grober Auflösung fehlen.",
+          "Kühlwirkung hängt von Wetter, Größe und Stadtform ab."
+        ],
+        refs: [
+          "McFeeters (1996).",
+          "Xu (2006)."
+        ]
+      },
+
+      albedo: {
+        title: "Albedo",
+        subtitle: "Reflexionsgrad (kurzwellige Strahlung)",
+        what:
+          "Albedo ist der Anteil des einfallenden Sonnenlichts, der reflektiert wird. Hellere Oberflächen haben meist höhere Albedo und absorbieren weniger Strahlung.",
+        units: "Dimensionslos (0–1) oder Prozent.",
+        interpret: [
+          "Höhere Albedo kann tagsüber LST reduzieren – aber Effekte hängen auch von Feuchte/Vegetation ab.",
+          "Gut zum Vergleich von Dach‑/Belagsmaterialien und trockenen Böden.",
+          "In Städten sind Verschattung und 3D‑Geometrie wichtig."
+        ],
+        limitations: [
+          "Abhängig von Sonnenstand, Atmosphäre und der Schätzung von Breitband‑Albedo.",
+          "Saison/Wetness/Alterung verändern Albedo.",
+          "Städtische 3D‑Geometrie erschwert die Interpretation auf Quartiersebene."
+        ],
+        refs: [
+          "Liang (2001)."
+        ]
+      },
+
+      lcz: {
+        title: "Local Climate Zones (LCZ)",
+        subtitle: "Standardisierte Stadt-/Umland‑Klassen (Bauform + Landbedeckung)",
+        what:
+          "LCZ klassifiziert Flächen in Typen (z. B. kompakt hoch, offen niedrig, Bäume, Wasser) basierend auf Stadtstruktur und Landbedeckung – für konsistente Vergleiche zwischen Städten.",
+        units: "Kategoriale Klassen (LCZ 1–17).",
+        interpret: [
+          "Bebaute LCZ‑Klassen zeigen oft höhere Tages‑LST als natürliche Klassen, abhängig von Saison/Feuchte.",
+          "LCZ eignet sich, um ‚urban‘ und ‚rural‘ für SUHI konsistent zu definieren.",
+          "Erleichtert ‚like‑with‑like‘‑Vergleiche zwischen Städten."
+        ],
+        limitations: [
+          "Qualität hängt von Eingangsdaten/Training/Auflösung ab.",
+          "Übergangsbereiche und Mischpixel sind häufig.",
+          "LCZ beschreibt typische Struktur, nicht jeden Mikrostadtraum."
+        ],
+        refs: [
+          "Stewart & Oke (2012)."
+        ]
+      },
+
+      buildings3d: {
+        title: "3D‑Gebäude",
+        subtitle: "3D‑Stadtform (Visualisierung + Kontext)",
+        what:
+          "3D‑Gebäude zeigen die Stadtstruktur und helfen, Hitzemuster über Geometrie (Höhe, Dichte, Straßenschluchten) zu interpretieren – wichtig für Verschattung, Durchlüftung und Wärmespeicherung.",
+        units: "Geometrie (Höhen ggf. in Metern).",
+        interpret: [
+          "Dichte/tallere Bebauung kann Wärme speichern und nächtliche Abkühlung reduzieren; tagsüber kann Verschattung wirken.",
+          "Nutze die 3D‑Ansicht, um Hotspots im Kontext der Morphologie zu verstehen.",
+          "Wenn Attribute vorhanden sind, lassen sich Morphometriken ableiten."
+        ],
+        limitations: [
+          "3D‑Visualisierung ≠ automatisch exakte Physik; Genauigkeit hängt von der Quelle ab.",
+          "Höhen-/Datum‑Unterschiede können Versätze erzeugen.",
+          "Klimaeffekte hängen auch von Materialien, Vegetation, Feuchte und Wind ab."
+        ],
+        refs: [
+          "Oke et al. (2017)."
+        ]
+      }
+    };
+
+    function getLayerInfo(layerKey){
+      if (currentLang === "de") return LAYER_INFO_DE[layerKey] || LAYER_INFO[layerKey];
+      return LAYER_INFO[layerKey];
+    }
+
+    // =========================================================
+    // INFO MODAL: open/close + accessibility
+    // =========================================================
+    const infoOverlay = document.getElementById("infoModalOverlay");
+    const infoCloseBtn = document.getElementById("infoModalCloseBtn");
+    const infoTitleEl = document.getElementById("infoModalTitle");
+    const infoSubtitleEl = document.getElementById("infoModalSubtitle");
+    const infoContentEl = document.getElementById("infoModalContent");
+
+    let lastFocusedEl = null;
+
+    function buildSection(title, { text = "", bullets = null, refs = null } = {}) {
+      const sec = document.createElement("div");
+      sec.className = "modalSection";
+
+      const h = document.createElement("h4");
+      h.textContent = title;
+      sec.appendChild(h);
+
+      if (text) {
+        const p = document.createElement("p");
+        p.textContent = text;
+        sec.appendChild(p);
+      }
+
+      if (Array.isArray(bullets) && bullets.length) {
+        const ul = document.createElement("ul");
+        bullets.forEach(b => {
+          const li = document.createElement("li");
+          li.textContent = b;
+          ul.appendChild(li);
+        });
+        sec.appendChild(ul);
+      }
+
+      if (Array.isArray(refs) && refs.length) {
+        const r = document.createElement("div");
+        r.className = "modalRef";
+        r.textContent = tr("references_prefix") + refs.join(" • ");
+        sec.appendChild(r);
+      }
+
+      return sec;
+    }
+
+    function openInfoModal(layerKey, openerEl) {
+      window.__lastInfoKey = layerKey;
+      const item = getLayerInfo(layerKey);
+      if (!item) return;
+
+      lastFocusedEl = openerEl || document.activeElement;
+
+      infoTitleEl.textContent = item.title || "Layer information";
+      infoSubtitleEl.textContent = item.subtitle || "";
+
+      infoContentEl.innerHTML = "";
+      infoContentEl.appendChild(buildSection(tr("modal_what"), { text: item.what || "" }));
+      infoContentEl.appendChild(buildSection(tr("modal_units"), { text: item.units || "" }));
+      if (item.interpret?.length) infoContentEl.appendChild(buildSection(tr("modal_interpret"), { bullets: item.interpret }));
+      if (item.limitations?.length) infoContentEl.appendChild(buildSection(tr("modal_limitations"), { bullets: item.limitations }));
+      if (item.refs?.length) infoContentEl.appendChild(buildSection(tr("modal_refs"), { refs: item.refs }));
+
+      infoOverlay.classList.add("open");
+      infoOverlay.setAttribute("aria-hidden", "false");
+
+      // Focus
+      setTimeout(() => infoCloseBtn.focus(), 0);
+    }
+
+    function closeInfoModal() {
+      if (!infoOverlay.classList.contains("open")) return;
+      infoOverlay.classList.remove("open");
+      infoOverlay.setAttribute("aria-hidden", "true");
+
+      // Restore focus
+      if (lastFocusedEl && typeof lastFocusedEl.focus === "function") {
+        setTimeout(() => lastFocusedEl.focus(), 0);
+      }
+      lastFocusedEl = null;
+    }
+
+    // Backdrop click closes (clicking inside modal does not)
+    infoOverlay.addEventListener("click", (e) => {
+      if (e.target === infoOverlay) closeInfoModal();
+    });
+
+    infoCloseBtn.addEventListener("click", closeInfoModal);
+
+    // Escape to close + basic focus trap
+    document.addEventListener("keydown", (e) => {
+      if (!infoOverlay.classList.contains("open")) return;
+
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeInfoModal();
+        return;
+      }
+
+      if (e.key === "Tab") {
+        const focusables = infoOverlay.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const list = Array.from(focusables).filter(el => !el.disabled && el.offsetParent !== null);
+        if (!list.length) return;
+
+        const first = list[0];
+        const last = list[list.length - 1];
+
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    });
+
+    function wireInfoButtons() {
+      document.querySelectorAll(".infoBtn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation(); // prevent row-click toggle
+          openInfoModal(btn.dataset.info, btn);
+        });
+      });
+    }
+
+
+    // =========================================================
+    // MAIN: create viewer with TERRAIN ALWAYS ON
+    // =========================================================
+    let viewer = null;
+    const loadedByName = new Map();
+
+    // 3D Buildings runtime state
+    const buildingTilesets = new Map(); // city -> Cesium3DTileset
+    let buildingsEnabled = false;
+
+    function flyToCityTopDownFallback(key){
+      const v = CITY_VIEWS[key] || CITY_VIEWS.ALL;
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(v.lon, v.lat, v.height),
+        orientation: TOPDOWN,
+        duration: 1.0
+      });
+    }
+
+    function collectBoundaryPoints(ds){
+      const pts = [];
+      const now = Cesium.JulianDate.now();
+
+      for (const e of ds.entities.values) {
+        // Prefer polyline we create (outline)
+        if (e.polyline?.positions) {
+          const arr = e.polyline.positions.getValue(now);
+          if (arr && arr.length) pts.push(...arr);
+          continue;
+        }
+
+        // Fallback: polygon hierarchy positions
+        if (e.polygon?.hierarchy) {
+          const h = e.polygon.hierarchy.getValue(now);
+          const arr = h?.positions || h?.getValue?.(now)?.positions;
+          if (arr && arr.length) pts.push(...arr);
+        }
+      }
+      return pts;
+    }
+
+    function flyToBoundaryTopDown(city){
+  if (!viewer) return;
+
+  // Per-city zoom tuning (TOP-DOWN)
+  const HOME_ZOOM = {
+    ALL:       { mult: 2.6, min: 140000 },  // more zoomed-out for all cities
+    Wuppertal: { mult: 2.4, min: 42000 },
+    Essen:     { mult: 2.2, min: 42000 },
+    Soest:     { mult: 2.3, min: 34000 }
+  };
+
+  const cfg = HOME_ZOOM[city] || HOME_ZOOM.ALL;
+
+  if (city === "ALL") {
+    const allPts = [];
+    for (const [, ds] of loadedByName) {
+      allPts.push(...collectBoundaryPoints(ds));
+    }
+    if (!allPts.length) return flyToCityTopDownFallback("ALL");
+
+    const bs0 = Cesium.BoundingSphere.fromPoints(allPts);
+
+// --- screen composition tweak for ALL: shift target slightly SOUTH so shapes sit higher ---
+const rect = Cesium.Rectangle.fromCartesianArray(allPts);
+const c = Cesium.Rectangle.center(rect);
+const spanLat = rect.north - rect.south;
+
+// negative = shift SOUTH (content goes UP on screen)
+const PAN_SOUTH_FRAC = 0.12; // try 0.08 .. 0.20
+const baseH = Cesium.Cartographic.fromCartesian(bs0.center).height;
+
+let newLat = c.latitude - spanLat * PAN_SOUTH_FRAC;
+newLat = Cesium.Math.clamp(newLat, -Cesium.Math.PI_OVER_TWO + 1e-6, Cesium.Math.PI_OVER_TWO - 1e-6);
+
+const shiftedCenter = Cesium.Cartesian3.fromRadians(c.longitude, newLat, baseH);
+const bs = new Cesium.BoundingSphere(shiftedCenter, bs0.radius);
+    const range = Math.max(bs.radius * cfg.mult, cfg.min);
+    return viewer.camera.flyToBoundingSphere(bs, {
+      duration: 1.0,
+      offset: new Cesium.HeadingPitchRange(0.0, -Cesium.Math.PI_OVER_TWO, range)
+    });
+  }
+
+  const ds = loadedByName.get(city);
+  if (!ds) return flyToCityTopDownFallback(city);
+
+  const pts = collectBoundaryPoints(ds);
+  if (!pts.length) return viewer.flyTo(ds, { duration: 1.0 });
+
+  const bs = Cesium.BoundingSphere.fromPoints(pts);
+  const range = Math.max(bs.radius * cfg.mult, cfg.min);
+
+  viewer.camera.flyToBoundingSphere(bs, {
+    duration: 1.0,
+    offset: new Cesium.HeadingPitchRange(0.0, -Cesium.Math.PI_OVER_TWO, range)
+  });
+}
+
+function applyBoundaryVisibility(){
+  if (loadedByName.size === 0) return;
+
+  if (selectedCity === "ALL") {
+    for (const [, ds] of loadedByName) ds.show = true;
+    return;
+  }
+  for (const [name, ds] of loadedByName) ds.show = (name === selectedCity);
+}
+
+async function ensureBuildingTileset(city){
+  const assetId = BUILDING_ASSET_IDS[city];
+  if (!assetId) return null;
+
+  if (buildingTilesets.has(city)) return buildingTilesets.get(city);
+
+  console.log(`[3D Buildings] Loading tileset for ${city} (asset ${assetId})...`);
+  const ts = await Cesium.Cesium3DTileset.fromIonAssetId(assetId);
+
+  ts.show = false;
+  ts.shadows = Cesium.ShadowMode.ENABLED;
+
+  viewer.scene.primitives.add(ts);
+  buildingTilesets.set(city, ts);
+
+  console.log(`[3D Buildings] Loaded ${city}.`);
+  return ts;
+}
+
+async function ensureAllBuildingTilesets(){
+  const cities = Object.keys(BUILDING_ASSET_IDS).filter(c => BUILDING_ASSET_IDS[c]);
+  for (const c of cities) {
+    await ensureBuildingTileset(c);
+  }
+}
+
+async function updateBuildingsVisibility(){
+  if (!viewer) return;
+
+  // hide all first
+  for (const [, ts] of buildingTilesets) ts.show = false;
+
+  if (!buildingsEnabled) return;
+
+  if (selectedCity === "ALL") {
+    await ensureAllBuildingTilesets();
+    for (const [, ts] of buildingTilesets) ts.show = true;
+  } else {
+    await ensureBuildingTileset(selectedCity);
+    const ts = buildingTilesets.get(selectedCity);
+    if (ts) ts.show = true;
+  }
+}
+
+function handleSelectionChange(){
+  updateSelectedLabel();
+  applyBoundaryVisibility();
+
+  // Fit to boundary (top-down)
+  flyToBoundaryTopDown(selectedCity);
+
+  void updateBuildingsVisibility().catch(err => console.error("[3D Buildings] update failed:", err));
+  console.log("Selection:", selectedCity, selectedYear);
+}
+
+async function addBoundaryFromIon(assetId, color, name) {
+  const resource = await Cesium.IonResource.fromAssetId(assetId);
+  const ds = await Cesium.GeoJsonDataSource.load(resource, { clampToGround: true });
+  ds.name = name;
+  viewer.dataSources.add(ds);
+
+  const now = Cesium.JulianDate.now();
+
+  for (const e of ds.entities.values) {
+    if (e.polygon) {
+      e.polygon.material = Cesium.Color.TRANSPARENT;
+      e.polygon.outline = false;
+
+      const h = e.polygon.hierarchy?.getValue(now);
+      if (h?.positions?.length) {
+        const closed = h.positions.concat([h.positions[0]]);
+        e.polyline = new Cesium.PolylineGraphics({
+          positions: closed,
+          width: 4,
+          material: color,
+          clampToGround: true
+        });
+      }
+    }
+
+    if (e.polyline) {
+      e.polyline.material = color;
+      e.polyline.width = 4;
+      e.polyline.clampToGround = true;
+    }
+  }
+
+  return ds;
+}
+
+function wireLayerSwitches(){
+  // Click anywhere on row toggles the switch
+  document.querySelectorAll(".layerRow").forEach((row) => {
+    row.addEventListener("click", (e) => {
+      if (e.target && (e.target.tagName === "INPUT" || e.target.classList.contains("slider"))) return;
+
+      if (e.target && e.target.closest && e.target.closest(".infoBtn")) return;
+
+      const key = row.getAttribute("data-toggle-row");
+      const cb = document.querySelector(`.layerSwitch[data-layer="${key}"]`);
+      if (!cb) return;
+      cb.checked = !cb.checked;
+      cb.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  });
+
+  // Initialize switches from localStorage + change events
+  document.querySelectorAll(".layerSwitch").forEach((cb) => {
+    const key = cb.dataset.layer;
+    const state = getLayerState();
+    cb.checked = !!state[key];
+
+    // apply initial state
+    if (key === "buildings3d") {
+      buildingsEnabled = cb.checked;
+      void updateBuildingsVisibility().catch(console.error);
+    } else {
+      setVisible(LAYER_REGISTRY[key], cb.checked);
+    }
+
+    cb.addEventListener("change", (e) => {
+      const on = e.target.checked;
+
+      const s = getLayerState();
+      s[key] = on;
+      setLayerState(s);
+
+      if (key === "buildings3d") {
+        buildingsEnabled = on;
+        void updateBuildingsVisibility().catch(console.error);
+        return;
+      }
+
+      const ref = LAYER_REGISTRY[key];
+      if (!ref) {
+        console.warn(`Layer "${key}" is not registered yet. Once you add it, the switch will control it.`);
+        return;
+      }
+      setVisible(ref, on);
+    });
+  });
+}
+
+(async () => {
+  const terrainProvider = await Cesium.createWorldTerrainAsync({
+    requestVertexNormals: true,
+    requestWaterMask: true
+  });
+
+  viewer = new Cesium.Viewer("cesiumContainer", {
+    timeline: false,
+    animation: false,
+
+    geocoder: true,
+    homeButton: true,
+    sceneModePicker: true,
+    baseLayerPicker: true,
+    navigationHelpButton: true,
+    fullscreenButton: true,
+    vrButton: false,
+
+    infoBox: false,
+    selectionIndicator: false,
+
+    fullscreenElement: appFrameEl,
+    terrainProvider
+  });
+
+  viewer.scene.globe.depthTestAgainstTerrain = true;
+  viewer.scene.globe.enableLighting = false;
+
+  // HOME -> current selection (fit boundary)
+  viewer.homeButton.viewModel.command.beforeExecute.addEventListener(function(e){
+    e.cancel = true;
+    flyToBoundaryTopDown(selectedCity);
+  });
+
+  // Wire pills after viewer exists
+  setupPills("cityPills", "city", (city) => {
+    selectedCity = city;
+    handleSelectionChange();
+  });
+
+  setupPills("yearPills", "year", (year) => {
+    selectedYear = year;
+    handleSelectionChange();
+  });
+
+  // Language (EN/DE)
+  setupPills("langPills", "lang", (lang) => {
+    setLanguage(lang);
+  });
+
+  // Load boundaries
+  try {
+    for (const a of ASSETS) {
+      const ds = await addBoundaryFromIon(a.id, a.color, a.name);
+      loadedByName.set(a.name, ds);
+    }
+    applyBoundaryVisibility();
+  } catch (err) {
+    console.error("Boundary load failed:", err);
+  }
+
+  // Switch wiring (needs viewer)
+  // Info buttons (modal)
+  wireInfoButtons();
+
+  wireLayerSwitches();
+
+  handleSelectionChange();
+
+  // Expose for debugging
+  window.viewer = viewer;
+  window.registerLayer = registerLayer;
+  window.LAYER_REGISTRY = LAYER_REGISTRY;
+})();
 
     // ===== Theme toggle =====
     const themeToggle = document.getElementById("themeToggle");
@@ -1314,7 +2439,7 @@
       document.documentElement.setAttribute("data-theme", theme);
       localStorage.setItem("theme", theme);
       themeIcon.textContent = (theme === "light") ? "☀︎" : "☾";
-      themeText.textContent = (theme === "light") ? "Light" : "Dark";
+      themeText.textContent = (theme === "light") ? tr("theme_light") : tr("theme_dark");
     }
 
     const saved = localStorage.getItem("theme");
@@ -1326,8 +2451,22 @@
       applyTheme(current === "dark" ? "light" : "dark");
     });
 
+    // ===== Overview =====
+    const overviewBtn = document.getElementById("overviewBtn");
+    if (overviewBtn){
+      overviewBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        openInfoModal("overview");
+      });
+    }
+
+    // Open overview when the dashboard loads
+    window.addEventListener("load", () => {
+      openInfoModal("overview");
+    }, { once: true });
+
     // =========================================================
-    // AI CHAT (concept assistant)
+    // AI CHAT (concept assistant) — unchanged
     // =========================================================
     const chatToggle = document.getElementById("chatToggle");
     const chatPanel = document.getElementById("chatPanel");
@@ -1364,7 +2503,7 @@
         row.className = "msgRow bot";
         const t = document.createElement("div");
         t.className = "typing";
-        t.textContent = "Assistant is typing…";
+        t.textContent = tr("assistant_typing");
         row.appendChild(t);
         chatContent.appendChild(row);
         chatContent.scrollTop = chatContent.scrollHeight;
@@ -1373,10 +2512,14 @@
       }
     }
 
-    // ---------------------------
-    // Wikipedia-only concept assistant (robust + acronym-safe)
-    // ---------------------------
-    const WIKI_GLOSSARY = {
+    function wikiApiBase(){
+      return (currentLang === "de") ? "https://de.wikipedia.org/w/api.php" : "https://en.wikipedia.org/w/api.php";
+    }
+    function wikiPageBase(){
+      return (currentLang === "de") ? "https://de.wikipedia.org/wiki/" : "https://en.wikipedia.org/wiki/";
+    }
+
+    const WIKI_GLOSSARY_EN = {
       "uhi": "Urban heat island",
       "suhi": "Urban heat island",
       "lst": "Land surface temperature",
@@ -1397,10 +2540,31 @@
       "lcz": "Local climate zone"
     };
 
-    const WIKI_CACHE = {
-      search: new Map(),
-      extract: new Map()
+    const WIKI_GLOSSARY_DE = {
+      "uhi": "Städtische Wärmeinsel",
+      "suhi": "Städtische Wärmeinsel",
+      "lst": "Landoberflächentemperatur",
+      "ndvi": "Normalized Difference Vegetation Index",
+      "ndwi": "Normalized Difference Water Index",
+      "mndwi": "Modified Normalized Difference Water Index",
+      "ndbi": "Normalized Difference Built-up Index",
+      "savi": "Soil-adjusted vegetation index",
+      "albedo": "Albedo",
+      "albido": "Albedo",
+      "fernerkundung": "Fernerkundung",
+      "remotesensing": "Fernerkundung",
+      "gis": "Geoinformationssystem",
+      "hotspot": "Hot-Spot-Analyse",
+      "hotspotanalyse": "Hot-Spot-Analyse",
+      "coldspot": "Hot-Spot-Analyse",
+      "lcz": "Local Climate Zone"
     };
+
+    function wikiGlossary(){
+      return (currentLang === "de") ? WIKI_GLOSSARY_DE : WIKI_GLOSSARY_EN;
+    }
+
+    const WIKI_CACHE = { search: new Map(), extract: new Map() };
 
     async function fetchJsonWithRetry(url, { timeoutMs = 9000, retries = 2 } = {}) {
       let lastErr = null;
@@ -1437,14 +2601,15 @@
 
     function normalizeQuery(raw) {
       let q = (raw || "").trim();
-      q = q.replace(/^(what is|what’s|whats|define|meaning of)\s+/i, "").trim();
+      q = q.replace(/^(what is|what’s|whats|define|meaning of|was ist|was sind|definiere|definition von|bedeutung von)\s+/i, "").trim();
 
       const key = q.toLowerCase().replace(/[^a-z0-9]/g, "");
-      if (WIKI_GLOSSARY[key]) return { query: WIKI_GLOSSARY[key], forced: true };
+      const G = wikiGlossary();
+      if (G[key]) return { query: G[key], forced: true };
 
       if (/^[A-Z]{2,6}$/.test(q)) {
         const key2 = q.toLowerCase();
-        if (WIKI_GLOSSARY[key2]) return { query: WIKI_GLOSSARY[key2], forced: true };
+        if (G[key2]) return { query: G[key2], forced: true };
       }
 
       return { query: q, forced: false };
@@ -1457,7 +2622,7 @@
       if (WIKI_CACHE.search.has(q)) return WIKI_CACHE.search.get(q);
 
       const url =
-        "https://en.wikipedia.org/w/api.php" +
+        wikiApiBase() +
         `?action=query&list=search&format=json&origin=*` +
         `&srlimit=${encodeURIComponent(String(limit))}` +
         `&srsearch=${encodeURIComponent(q)}`;
@@ -1474,7 +2639,7 @@
 
       const joined = titles.join("|");
       const url =
-        "https://en.wikipedia.org/w/api.php" +
+        wikiApiBase() +
         `?action=query&prop=pageprops&format=json&origin=*` +
         `&titles=${encodeURIComponent(joined)}`;
 
@@ -1504,7 +2669,7 @@
       if (WIKI_CACHE.extract.has(title)) return WIKI_CACHE.extract.get(title);
 
       const url =
-        "https://en.wikipedia.org/w/api.php" +
+        wikiApiBase() +
         `?action=query&prop=extracts&format=json&origin=*` +
         `&explaintext=1&exsectionformat=plain&exchars=9000` +
         `&redirects=1` +
@@ -1520,7 +2685,7 @@
     }
 
     function buildWikipediaLink(title) {
-      return `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/\s+/g, "_"))}`;
+      return `${wikiPageBase()}${encodeURIComponent(title.replace(/\s+/g, "_"))}`;
     }
 
     function splitIntoSentences(text) {
@@ -1577,7 +2742,7 @@
 
       const title = document.createElement("div");
       title.className = "quickQsTitle";
-      title.textContent = "Quick questions";
+      title.textContent = tr("quick_questions");
 
       const grid = document.createElement("div");
       grid.className = "quickQsGrid";
@@ -1603,7 +2768,7 @@
 
     async function askAI(userMessage){
       const raw = (userMessage || "").trim();
-      if (!raw) return "Ask me a term or concept to explain.";
+      if (!raw) return tr("ask_term_default");
 
       try {
         const norm = normalizeQuery(raw);
@@ -1613,42 +2778,42 @@
           const extract = await wikiFetchExtract(q);
           const link = buildWikipediaLink(q);
 
-          if (!extract) return `I couldn’t retrieve a Wikipedia summary right now.\n\nSource: ${link}`;
+          if (!extract) return `${tr("cant_retrieve_summary")}\n\n${tr("source_label")}${link}`;
 
           const lead = leadSentences(extract, 3).join(" ");
           const out = lead || extract.slice(0, 600).trim();
-          return `${out}\n\nSource: ${link}`;
+          return `${out}\n\n${tr("source_label")}${link}`;
         }
 
         const titles = await wikiSearchCandidates(q, 6);
-        if (!titles.length) return "I couldn’t find a matching Wikipedia page for that.";
+        if (!titles.length) return tr("no_match");
 
         const bestTitle = await wikiPickBestTitle(titles);
-        if (!bestTitle) return "I couldn’t find a matching Wikipedia page for that.";
+        if (!bestTitle) return tr("no_match");
 
         const extract = await wikiFetchExtract(bestTitle);
         const link = buildWikipediaLink(bestTitle);
 
-        if (!extract) return `I found a Wikipedia page, but couldn’t extract readable content.\n\nSource: ${link}`;
+        if (!extract) return `I found a Wikipedia page, but couldn’t extract readable content.\n\n${tr("source_label")}${link}`;
 
         if (extract.toLowerCase().includes("may refer to")) {
           const options = titles.slice(0, 3).map((t, i) => `${i+1}) ${t}`).join("\n");
-          return `That term is ambiguous on Wikipedia. Try a more specific phrase.\n\nPossible pages:\n${options}\n\nSource: ${link}`;
+          return `${tr("ambiguous")}\n\n${tr("possible_pages")}\n${options}\n\n${tr("source_label")}${link}`;
         }
 
         const best = pickBestSentences(extract, raw, 3);
         const answerBody = best.length ? best.join(" ") : leadSentences(extract, 2).join(" ");
         const trimmed = answerBody.length > 1100 ? (answerBody.slice(0, 1100).trim() + "…") : answerBody;
 
-        return `${trimmed}\n\nSource: ${link}`;
+        return `${trimmed}\n\n${tr("source_label")}${link}`;
       } catch (e) {
         const msg = String(e || "");
         const hint =
-          msg.includes("AbortError") ? "Wikipedia request timed out." :
-          msg.includes("HTTP 429") ? "Wikipedia is rate-limiting requests. Please try again in a moment." :
-          "I couldn’t reach Wikipedia right now.";
+          msg.includes("AbortError") ? tr("wiki_timeout") :
+          msg.includes("HTTP 429") ? tr("wiki_ratelimit") :
+          tr("wiki_unreachable");
 
-        return `${hint}\n\nTip: check your internet connection and keep the dashboard running via Live Server.`;
+        return `${hint}\n\n${tr("wiki_tip")}`;
       }
     }
 
@@ -1674,32 +2839,18 @@
       }
     }
 
-    appendMessage("bot", "Hi! I’m your assistant — ask me anything you’d like to explore.");
+        // Apply saved language once UI is ready
+    setLanguage(currentLang);
 
-    appendQuickQuestions([
-      "What is LST?",
-      "What is UHI?",
-      "What is SUHI?",
-      "What is NDVI?",
-      "What is NDWI?",
-      "What is albedo?",
-      "What is remote sensing?",
-      "What is GIS?",
-      "What is a hotspot analysis?",
-      "What is a cold spot?"
-    ]);
+    appendMessage("bot", tr("chat_greeting"));
 
-    chatToggle.addEventListener("click", () => toggleChat(true));
+    appendQuickQuestions(getQuickQuestions());
+chatToggle.addEventListener("click", () => toggleChat(true));
     chatCloseBtn.addEventListener("click", () => toggleChat(false));
     chatSendBtn.addEventListener("click", sendChat);
     chatText.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        sendChat();
-      }
-      if (e.key === "Escape") {
-        toggleChat(false);
-      }
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendChat(); }
+      if (e.key === "Escape") toggleChat(false);
     });
 
     window.toggleChat = toggleChat;
