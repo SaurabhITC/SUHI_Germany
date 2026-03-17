@@ -8,6 +8,7 @@
   <!-- Cesium CDN -->
   <link href="https://cesium.com/downloads/cesiumjs/releases/1.121/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
   <script src="https://cesium.com/downloads/cesiumjs/releases/1.121/Build/Cesium/Cesium.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/geotiff@2.1.3/dist-browser/geotiff.js"></script>
 
   <style>
     :root{
@@ -438,6 +439,59 @@
       min-height: 0;
     }
     #cesiumContainer{ position: absolute; inset: 0; }
+
+    #lstValueOverlay{
+      position:absolute;
+      left:0;
+      top:0;
+      display:none;
+      transform:translate(-50%, calc(-100% - 18px));
+      pointer-events:none;
+      z-index:48;
+    }
+
+    #lstValueOverlay.show{ display:block; }
+
+    #lstValueBadge{
+      display:flex;
+      align-items:baseline;
+      justify-content:center;
+      gap:3px;
+      min-width:auto;
+      padding:8px 10px 9px;
+      border-radius:12px;
+      background:rgba(16, 28, 52, 0.98);
+      border:1px solid rgba(169, 190, 228, 0.28);
+      box-shadow:0 10px 24px rgba(7, 12, 22, 0.18);
+      backdrop-filter:blur(6px);
+      -webkit-backdrop-filter:blur(6px);
+    }
+
+    #lstValueNumber{
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      line-height: 1;
+      color:#F7FAFF;
+      letter-spacing:0.01em;
+      font-variant-numeric: tabular-nums;
+      text-rendering: geometricPrecision;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    #lstValueUnit{
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1;
+      color:rgba(231, 238, 248, 0.92);
+      letter-spacing:0.01em;
+      font-variant-numeric: tabular-nums;
+      text-rendering: geometricPrecision;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
 
     #footer{
       height: var(--footer-h);
@@ -1103,6 +1157,13 @@
       <main id="mapArea">
         <div id="cesiumContainer"></div>
 
+        <div id="lstValueOverlay" aria-hidden="true">
+          <div id="lstValueBadge">
+            <span id="lstValueNumber">0.0</span>
+            <span id="lstValueUnit">°C</span>
+          </div>
+        </div>
+
         <div id="chatToggle" title="Ask the AI Assistant" aria-label="Open AI Assistant" role="button">🤖</div>
 
         <div id="chatPanel" aria-label="AI Assistant panel" role="dialog" aria-modal="false">
@@ -1184,6 +1245,286 @@
     const selectedInfo = document.getElementById("selectedInfo");
     let selectedCity = "ALL";
     let selectedYear = "2024";
+
+    const TEST_COG_URL = "https://saurabhitc.github.io/SUHI_Germany/data/rasters/2024_LST_Wuppertal_c_4326_cog.tif";
+
+    async function testCogRead() {
+      try {
+        const tiff = await GeoTIFF.fromUrl(TEST_COG_URL);
+        const image = await tiff.getImage();
+
+        console.log("COG width:", image.getWidth());
+        console.log("COG height:", image.getHeight());
+        console.log("COG bbox:", image.getBoundingBox());
+        console.log("COG origin:", image.getOrigin());
+        console.log("COG resolution:", image.getResolution());
+        console.log("COG nodata:", image.getGDALNoData());
+      } catch (err) {
+        console.error("COG test read failed:", err);
+      }
+    }
+
+    let lstSingleTileLayer = null;
+    let lstRasterCache = null;
+    let lstClickHandler = null;
+    let lstValueOverlayCartesian = null;
+
+    const mapAreaEl = document.getElementById("mapArea");
+    const lstValueOverlayEl = document.getElementById("lstValueOverlay");
+    const lstValueNumberEl = document.getElementById("lstValueNumber");
+    const lstValueUnitEl = document.getElementById("lstValueUnit");
+
+    function getLayerEnabled(key){
+      const el = document.querySelector(`.layerSwitch[data-layer="${key}"]`);
+      return !!el?.checked;
+    }
+
+    function computeFiniteMinMax(values){
+      let min = Infinity;
+      let max = -Infinity;
+      for (let i = 0; i < values.length; i++) {
+        const v = values[i];
+        if (!Number.isFinite(v)) continue;
+        if (v < min) min = v;
+        if (v > max) max = v;
+      }
+      if (!Number.isFinite(min) || !Number.isFinite(max)) {
+        return { min: 0, max: 1 };
+      }
+      if (min === max) return { min, max: min + 1 };
+      return { min, max };
+    }
+
+    function lerp(a, b, t){
+      return a + (b - a) * t;
+    }
+
+    function heatRampColor(t){
+      const stops = [
+        [0.00, [49, 54, 149]],
+        [0.20, [69, 117, 180]],
+        [0.40, [116, 173, 209]],
+        [0.55, [171, 217, 233]],
+        [0.70, [254, 224, 144]],
+        [0.85, [253, 174, 97]],
+        [1.00, [215, 25, 28]]
+      ];
+
+      const x = Math.max(0, Math.min(1, t));
+      for (let i = 0; i < stops.length - 1; i++) {
+        const [t0, c0] = stops[i];
+        const [t1, c1] = stops[i + 1];
+        if (x >= t0 && x <= t1) {
+          const u = (x - t0) / (t1 - t0 || 1);
+          return [
+            Math.round(lerp(c0[0], c1[0], u)),
+            Math.round(lerp(c0[1], c1[1], u)),
+            Math.round(lerp(c0[2], c1[2], u))
+          ];
+        }
+      }
+      return stops[stops.length - 1][1];
+    }
+
+    function buildCanvasFromFloatRaster(values, width, height, min, max, nodataValue){
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d", { willReadFrequently: false });
+      const img = ctx.createImageData(width, height);
+      const rgba = img.data;
+      const span = (max - min) || 1;
+
+      for (let i = 0; i < values.length; i++) {
+        const v = values[i];
+        const j = i * 4;
+
+        const isNoData = !Number.isFinite(v) || (Number.isFinite(nodataValue) && v === nodataValue);
+        if (isNoData) {
+          rgba[j + 0] = 0;
+          rgba[j + 1] = 0;
+          rgba[j + 2] = 0;
+          rgba[j + 3] = 0;
+          continue;
+        }
+
+        const tt = Math.max(0, Math.min(1, (v - min) / span));
+        const [r, g, b] = heatRampColor(tt);
+        rgba[j + 0] = r;
+        rgba[j + 1] = g;
+        rgba[j + 2] = b;
+        rgba[j + 3] = 185;
+      }
+
+      ctx.putImageData(img, 0, 0);
+      return canvas;
+    }
+
+    function removeLstValueLabel(){
+      lstValueOverlayCartesian = null;
+      if (!lstValueOverlayEl) return;
+      lstValueOverlayEl.classList.remove("show");
+      lstValueOverlayEl.style.left = "-9999px";
+      lstValueOverlayEl.style.top = "-9999px";
+    }
+
+    function isLstValueNoData(v, nodataValue){
+      return !Number.isFinite(v) || (Number.isFinite(nodataValue) && v === nodataValue);
+    }
+
+    function lonLatToLstPixel(lon, lat){
+      if (!lstRasterCache) return null;
+      const { bbox, width, height } = lstRasterCache;
+      const [minX, minY, maxX, maxY] = bbox;
+
+      if (lon < minX || lon > maxX || lat < minY || lat > maxY) return null;
+
+      let x = Math.floor(((lon - minX) / (maxX - minX)) * width);
+      let y = Math.floor(((maxY - lat) / (maxY - minY)) * height);
+
+      x = Math.max(0, Math.min(width - 1, x));
+      y = Math.max(0, Math.min(height - 1, y));
+
+      return { x, y, index: y * width + x };
+    }
+
+    function updateLstValueOverlayScreenPosition(){
+      if (!viewer || !lstValueOverlayEl || !lstValueOverlayCartesian) return;
+
+      const windowPos = Cesium.SceneTransforms.worldToWindowCoordinates(viewer.scene, lstValueOverlayCartesian);
+      if (!Cesium.defined(windowPos) || !Number.isFinite(windowPos.x) || !Number.isFinite(windowPos.y)) {
+        lstValueOverlayEl.classList.remove("show");
+        return;
+      }
+
+      const rect = mapAreaEl.getBoundingClientRect();
+      const x = windowPos.x;
+      const y = windowPos.y;
+      const padding = 4;
+      if (x < -padding || y < -padding || x > rect.width + padding || y > rect.height + padding) {
+        lstValueOverlayEl.classList.remove("show");
+        return;
+      }
+
+      lstValueOverlayEl.style.left = `${x}px`;
+      lstValueOverlayEl.style.top = `${y}px`;
+      lstValueOverlayEl.classList.add("show");
+    }
+
+    function showLstValueLabel(lon, lat, value){
+      if (!viewer || !lstValueOverlayEl || !lstValueNumberEl || !lstValueUnitEl) return;
+
+      lstValueNumberEl.textContent = value.toFixed(1);
+      lstValueUnitEl.textContent = "°C";
+      lstValueOverlayCartesian = Cesium.Cartesian3.fromDegrees(lon, lat);
+      updateLstValueOverlayScreenPosition();
+    }
+
+    function setupLstClickValueHandler(){
+      if (lstClickHandler || !viewer) return;
+
+      lstClickHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+      lstClickHandler.setInputAction((movement) => {
+        const shouldRead =
+          getLayerEnabled("lst") &&
+          selectedCity === "Wuppertal" &&
+          selectedYear === "2024" &&
+          !!lstRasterCache;
+
+        if (!shouldRead) {
+          removeLstValueLabel();
+          return;
+        }
+
+        const ray = viewer.camera.getPickRay(movement.position);
+        if (!ray) {
+          removeLstValueLabel();
+          return;
+        }
+
+        const cartesian = viewer.scene.globe.pick(ray, viewer.scene);
+        if (!cartesian) {
+          removeLstValueLabel();
+          return;
+        }
+
+        const cartographic = Cesium.Cartographic.fromCartesian(cartesian);
+        const lon = Cesium.Math.toDegrees(cartographic.longitude);
+        const lat = Cesium.Math.toDegrees(cartographic.latitude);
+
+        const px = lonLatToLstPixel(lon, lat);
+        if (!px) {
+          removeLstValueLabel();
+          return;
+        }
+
+        const value = lstRasterCache.values[px.index];
+        if (isLstValueNoData(value, lstRasterCache.nodataValue)) {
+          removeLstValueLabel();
+          return;
+        }
+
+        showLstValueLabel(lon, lat, value);
+        console.log("Clicked LST value:", value, "pixel:", px.x, px.y);
+      }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+    }
+
+    function updateLstOverlayVisibility(){
+      if (!lstSingleTileLayer) return;
+      const shouldShow =
+        getLayerEnabled("lst") &&
+        selectedCity === "Wuppertal" &&
+        selectedYear === "2024";
+      lstSingleTileLayer.show = shouldShow;
+      if (!shouldShow) removeLstValueLabel();
+    }
+
+    async function loadWuppertal2024LSTLayer(){
+      try {
+        const tiff = await GeoTIFF.fromUrl(TEST_COG_URL);
+        const image = await tiff.getImage();
+        const width = image.getWidth();
+        const height = image.getHeight();
+        const bbox = image.getBoundingBox();
+        const origin = image.getOrigin();
+        const resolution = image.getResolution();
+        const nodataRaw = image.getGDALNoData();
+        const nodataValue = nodataRaw == null ? null : Number(nodataRaw);
+        const rasters = await image.readRasters({ interleave: true });
+        const values = (rasters instanceof Float32Array || rasters instanceof Float64Array) ? rasters : Float32Array.from(rasters);
+        const mm = computeFiniteMinMax(values);
+
+        lstRasterCache = { width, height, bbox, nodataValue, values };
+
+        console.log("COG width:", width);
+        console.log("COG height:", height);
+        console.log("COG bbox:", bbox);
+        console.log("COG origin:", origin);
+        console.log("COG resolution:", resolution);
+        console.log("COG nodata:", nodataRaw);
+        console.log("LST display range:", mm.min, mm.max);
+
+        const canvas = buildCanvasFromFloatRaster(values, width, height, mm.min, mm.max, nodataValue);
+        const dataUrl = canvas.toDataURL("image/png");
+        const rectangle = Cesium.Rectangle.fromDegrees(bbox[0], bbox[1], bbox[2], bbox[3]);
+
+        const provider = new Cesium.SingleTileImageryProvider({
+          url: dataUrl,
+          rectangle
+        });
+
+        lstSingleTileLayer = viewer.imageryLayers.addImageryProvider(provider);
+        lstSingleTileLayer.alpha = 0.85;
+        lstSingleTileLayer.show = false;
+        registerLayer("lst", lstSingleTileLayer);
+        updateLstOverlayVisibility();
+
+        window.__lstOverlayDebug = { bbox, min: mm.min, max: mm.max, width, height };
+        console.log("LST overlay loaded for Wuppertal 2024.");
+      } catch (err) {
+        console.error("LST overlay load failed:", err);
+      }
+    }
 
 
     // =========================================================
@@ -2263,6 +2604,7 @@ function handleSelectionChange(){
   // Fit to boundary (top-down)
   flyToBoundaryTopDown(selectedCity);
 
+  updateLstOverlayVisibility();
   void updateBuildingsVisibility().catch(err => console.error("[3D Buildings] update failed:", err));
   console.log("Selection:", selectedCity, selectedYear);
 }
@@ -2328,6 +2670,8 @@ function wireLayerSwitches(){
     if (key === "buildings3d") {
       buildingsEnabled = cb.checked;
       void updateBuildingsVisibility().catch(console.error);
+    } else if (key === "lst") {
+      updateLstOverlayVisibility();
     } else {
       setVisible(LAYER_REGISTRY[key], cb.checked);
     }
@@ -2342,6 +2686,11 @@ function wireLayerSwitches(){
       if (key === "buildings3d") {
         buildingsEnabled = on;
         void updateBuildingsVisibility().catch(console.error);
+        return;
+      }
+
+      if (key === "lst") {
+        updateLstOverlayVisibility();
         return;
       }
 
@@ -2380,8 +2729,10 @@ function wireLayerSwitches(){
     terrainProvider
   });
 
+  viewer.resolutionScale = Math.min(window.devicePixelRatio || 1, 2);
   viewer.scene.globe.depthTestAgainstTerrain = true;
   viewer.scene.globe.enableLighting = false;
+  viewer.scene.postRender.addEventListener(updateLstValueOverlayScreenPosition);
 
   // HOME -> current selection (fit boundary)
   viewer.homeButton.viewModel.command.beforeExecute.addEventListener(function(e){
@@ -2423,11 +2774,15 @@ function wireLayerSwitches(){
   wireLayerSwitches();
 
   handleSelectionChange();
+  await loadWuppertal2024LSTLayer();
+  setupLstClickValueHandler();
 
   // Expose for debugging
   window.viewer = viewer;
   window.registerLayer = registerLayer;
   window.LAYER_REGISTRY = LAYER_REGISTRY;
+  window.updateLstOverlayVisibility = updateLstOverlayVisibility;
+  window.removeLstValueLabel = removeLstValueLabel;
 })();
 
     // ===== Theme toggle =====
