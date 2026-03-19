@@ -840,6 +840,60 @@
     }
     html[data-theme="light"] .layerDivider{ background: rgba(12,18,30,0.12); }
 
+    .subLayerGroup{
+      display:none;
+      margin: 0 8px 8px 24px;
+      padding: 6px;
+      border-radius: 12px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,0.03);
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.03) inset;
+    }
+    html[data-theme="light"] .subLayerGroup{
+      background: rgba(12,18,30,0.03);
+    }
+    .subLayerGroup.open{ display:block; }
+
+    .subLayerRow{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:8px 8px;
+      border-radius:10px;
+      cursor:pointer;
+      user-select:none;
+    }
+    .subLayerRow:hover{ background: rgba(255,255,255,0.04); }
+    html[data-theme="light"] .subLayerRow:hover{ background: rgba(12,18,30,0.04); }
+
+    .subLayerLeft{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      min-width:0;
+      flex:1;
+    }
+
+    .subLayerSwatch{
+      width:12px;
+      height:12px;
+      border-radius:4px;
+      border:1px solid rgba(255,255,255,0.18);
+      box-shadow:0 0 0 1px rgba(0,0,0,0.06) inset;
+      flex:0 0 auto;
+    }
+
+    .subLayerName{
+      font-size:12px;
+      font-weight:650;
+      color: var(--text);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      min-width:0;
+    }
+
     .switch{ position:relative; width:44px; height:24px; flex:0 0 auto; }
     .switch input{ opacity:0; width:0; height:0; position:absolute; }
     .slider{
@@ -1321,16 +1375,16 @@
 
             <div class="layerList">
               <div class="layerRow" data-toggle-row="hotspots">
-              <div class="layerLeft">
-                <div class="layerNameWrap">
-                  <span class="layerName">Hotspots</span>
-                  <button type="button" class="infoBtn" data-info="hotspots" aria-label="About Hotspots" title="Info"><svg class="infoIco" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="4" r="1.2" fill="currentColor"></circle><path d="M8 7v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg></button>
+                <div class="layerLeft">
+                  <div class="layerNameWrap">
+                    <span class="layerName">Hotspots</span>
+                    <button type="button" class="infoBtn" data-info="hotspots" aria-label="About Hotspots" title="Info"><svg class="infoIco" viewBox="0 0 16 16" aria-hidden="true" focusable="false"><circle cx="8" cy="4" r="1.2" fill="currentColor"></circle><path d="M8 7v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path></svg></button>
+                  </div>
                 </div>
-              </div>
-              <label class="switch" aria-label="Toggle Hotspots">
-                <input class="layerSwitch" type="checkbox" data-layer="hotspots" />
-                <span class="slider"></span>
-              </label>
+                <label class="switch" aria-label="Toggle Hotspots">
+                  <input class="layerSwitch" type="checkbox" data-layer="hotspots" />
+                  <span class="slider"></span>
+                </label>
               </div>
             </div>
 
@@ -1517,6 +1571,21 @@
       Soest: 4471123
     };
 
+    const HOTSPOT_BASE_PATH = "data/Vector/Hotspots";
+    const HOTSPOT_FILE_SUFFIX = "70m_gistar_urbanOnly_hotcold_dissolved_4326.geojson";
+    const HOTSPOT_STYLES = {
+      hotspot: {
+        fill: Cesium.Color.fromCssColorString("#ff5252").withAlpha(0.42),
+        outline: Cesium.Color.fromCssColorString("#b71c1c").withAlpha(0.96),
+        line: Cesium.Color.fromCssColorString("#c62828").withAlpha(0.96)
+      },
+      coldspot: {
+        fill: Cesium.Color.fromCssColorString("#3aa0ff").withAlpha(0.38),
+        outline: Cesium.Color.fromCssColorString("#0d47a1").withAlpha(0.96),
+        line: Cesium.Color.fromCssColorString("#1565c0").withAlpha(0.96)
+      }
+    };
+
     let selectedCity = "ALL";
     let selectedYear = "2024";
     let viewer = null;
@@ -1524,6 +1593,12 @@
 
     const buildingTilesets = new Map();
     let buildingsEnabled = false;
+
+    const hotspotRuntime = {
+      requestedToken: 0,
+      layersByUrl: new Map(),
+      activeUrls: []
+    };
 
     const RASTER_KEYS = ["lst", "suhi", "ndvi", "ndbi", "ndwi", "albedo", "lcz"];
     const AVAILABLE_RASTER_KEYS = ["lst", "suhi", "ndvi", "ndbi", "ndwi", "lcz"];
@@ -2269,6 +2344,227 @@
       renderLegend();
     }
 
+
+    function getHotspotParentEnabled(){
+      return getLayerEnabled("hotspots");
+    }
+
+    function getDesiredHotspotCities(){
+      if (selectedCity === "ALL") return ASSETS.map((asset) => asset.name);
+      return [selectedCity];
+    }
+
+    function buildHotspotUrl(city, year){
+      return `${HOTSPOT_BASE_PATH}/${year}_${city}_${HOTSPOT_FILE_SUFFIX}`;
+    }
+
+    async function resolveHotspotRequests(){
+      const requests = [];
+      for (const city of getDesiredHotspotCities()) {
+        const url = buildHotspotUrl(city, selectedYear);
+        if (await urlExists(url)) requests.push({ city, year: selectedYear, url });
+      }
+      return requests;
+    }
+
+    function normalizeSpotValue(value){
+      return String(value ?? "").trim().toLowerCase().replace(/[_\s-]+/g, "");
+    }
+
+    function classifyHotspotFeature(propsLike){
+      const props = propsLike || {};
+      const keys = ["spot", "type", "spot_type", "spottype", "category", "class", "hs_cs", "hscs", "label", "cluster_type", "cluster"];
+      for (const key of keys) {
+        if (!(key in props)) continue;
+        const norm = normalizeSpotValue(props[key]);
+        if (!norm) continue;
+        if (norm.includes("cold")) return "coldspot";
+        if (norm.includes("hot")) return "hotspot";
+      }
+
+      const numericKeys = ["gi_bin", "gibin", "bin", "zscore", "z_score", "value"];
+      for (const key of numericKeys) {
+        if (!(key in props)) continue;
+        const num = Number(props[key]);
+        if (!Number.isFinite(num)) continue;
+        if (num < 0) return "coldspot";
+        if (num > 0) return "hotspot";
+      }
+
+      return null;
+    }
+
+    function flattenRingDegrees(ring){
+      if (!Array.isArray(ring)) return [];
+      const out = [];
+      for (const coord of ring) {
+        if (!Array.isArray(coord) || coord.length < 2) continue;
+        const lon = Number(coord[0]);
+        const lat = Number(coord[1]);
+        if (!Number.isFinite(lon) || !Number.isFinite(lat)) continue;
+        out.push(lon, lat);
+      }
+      return out.length >= 6 ? out : [];
+    }
+
+    function buildHoleHierarchy(rings){
+      const holes = [];
+      for (const ring of rings || []) {
+        const flat = flattenRingDegrees(ring);
+        if (!flat.length) continue;
+        holes.push(new Cesium.PolygonHierarchy(Cesium.Cartesian3.fromDegreesArray(flat)));
+      }
+      return holes;
+    }
+
+    function buildPolygonHierarchyFromRings(rings){
+      if (!Array.isArray(rings) || !rings.length) return null;
+      const outerFlat = flattenRingDegrees(rings[0]);
+      if (!outerFlat.length) return null;
+      return new Cesium.PolygonHierarchy(
+        Cesium.Cartesian3.fromDegreesArray(outerFlat),
+        buildHoleHierarchy(rings.slice(1))
+      );
+    }
+
+    function hotspotDescriptionHtml(label, city, year){
+      return `
+        <div style="font-family:system-ui,Segoe UI,Roboto,Arial;font-size:13px;line-height:1.45;">
+          <div><strong>Type:</strong> ${label}</div>
+          <div><strong>City:</strong> ${city}</div>
+          <div><strong>Year:</strong> ${year}</div>
+        </div>`;
+    }
+
+    function createHotspotEntity(hierarchy, spotType, city, year, props, partIndex){
+      const style = HOTSPOT_STYLES[spotType] || HOTSPOT_STYLES.hotspot;
+      const label = spotType === "coldspot" ? "Coldspot" : "Hotspot";
+
+      const entity = viewer.entities.add({
+        name: `${city} ${year} ${label}`,
+        show: false,
+        description: hotspotDescriptionHtml(label, city, year),
+        properties: {
+          ...props,
+          spot: props?.spot ?? spotType,
+          __spotType: spotType,
+          __cityName: city,
+          __yearValue: year,
+          __partIndex: partIndex
+        },
+        polygon: {
+          hierarchy,
+          material: style.fill,
+          outline: true,
+          outlineColor: style.outline,
+          outlineWidth: 2,
+          classificationType: Cesium.ClassificationType.BOTH,
+          zIndex: spotType === "hotspot" ? 24 : 23
+        }
+      });
+
+      entity.__spotType = spotType;
+      entity.__cityName = city;
+      entity.__yearValue = year;
+      entity.__partIndex = partIndex;
+
+      return entity;
+    }
+
+    function buildHotspotEntitiesFromFeature(feature, request){
+      const geometry = feature?.geometry;
+      const props = feature?.properties || {};
+      const spotType = classifyHotspotFeature(props) || "hotspot";
+      if (!geometry) return [];
+
+      let polygons = [];
+      if (geometry.type === "Polygon") {
+        polygons = [geometry.coordinates];
+      } else if (geometry.type === "MultiPolygon") {
+        polygons = geometry.coordinates;
+      } else {
+        return [];
+      }
+
+      const entities = [];
+      let partIndex = 0;
+
+      for (const rings of polygons) {
+        const hierarchy = buildPolygonHierarchyFromRings(rings);
+        if (!hierarchy) continue;
+        entities.push(createHotspotEntity(hierarchy, spotType, request.city, request.year, props, partIndex));
+        partIndex += 1;
+      }
+
+      return entities;
+    }
+
+    async function ensureHotspotLayer(request){
+      const cached = hotspotRuntime.layersByUrl.get(request.url);
+      if (cached) return cached;
+
+      const response = await fetch(request.url, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`Hotspot GeoJSON not found: ${request.url}`);
+      }
+
+      const geojson = await response.json();
+      const entities = [];
+      for (const feature of geojson?.features || []) {
+        entities.push(...buildHotspotEntitiesFromFeature(feature, request));
+      }
+
+      const record = {
+        ...request,
+        entities
+      };
+
+      hotspotRuntime.layersByUrl.set(request.url, record);
+      return record;
+    }
+
+    function applyHotspotVisibility(){
+      const parentOn = getHotspotParentEnabled();
+      const activeUrlSet = new Set(hotspotRuntime.activeUrls || []);
+
+      for (const [url, record] of hotspotRuntime.layersByUrl) {
+        const visible = parentOn && activeUrlSet.has(url);
+        for (const entity of record.entities || []) {
+          entity.show = visible;
+        }
+      }
+
+      renderLegend();
+    }
+
+    async function refreshHotspotLayers(){
+      if (!viewer) return;
+
+      const parentOn = getHotspotParentEnabled();
+      if (!parentOn) {
+        hotspotRuntime.activeUrls = [];
+        applyHotspotVisibility();
+        return;
+      }
+
+      const token = ++hotspotRuntime.requestedToken;
+      const requests = await resolveHotspotRequests();
+      if (token !== hotspotRuntime.requestedToken) return;
+
+      hotspotRuntime.activeUrls = requests.map((item) => item.url);
+
+      try {
+        for (const request of requests) {
+          await ensureHotspotLayer(request);
+          if (token !== hotspotRuntime.requestedToken) return;
+        }
+      } catch (err) {
+        console.error("Hotspot layer load failed:", err);
+      }
+
+      applyHotspotVisibility();
+    }
+
     function ringContainsLonLat(ring, lon, lat){
       if (!Array.isArray(ring) || ring.length < 3) return false;
       let inside = false;
@@ -2522,6 +2818,7 @@
       applyBoundaryVisibility();
       flyToBoundaryTopDown(selectedCity);
       await refreshRasterLayers();
+      await refreshHotspotLayers();
       void updateBuildingsVisibility().catch(err => console.error("[3D Buildings] update failed:", err));
       console.log("Selection:", selectedCity, selectedYear);
     }
@@ -2689,6 +2986,10 @@
       setVisible(cesiumObj, !!state[key]);
     }
 
+    function updateHotspotSubLayerGroup(){
+      // Hotspots now use a single main toggle. No nested sub-layer UI is shown.
+    }
+
     const LAYER_INFO = {
       overview: {
         title: "Dashboard overview",
@@ -2759,15 +3060,15 @@
       },
 
       hotspots: {
-        title: "Hotspots",
-        subtitle: "Areas with unusually high values relative to surroundings",
+        title: "Hotspots & Coldspots",
+        subtitle: "Statistically clustered hot and cool surface areas",
         what:
-          "Hotspots highlight locations that stand out as high values compared to their local neighborhood (e.g., high SUHI or high LST). In research this is often derived using local spatial statistics or thresholding.",
-        units: "Depends on the method (e.g., z-scores / p-values, or °C thresholds).",
+          "This layer shows dissolved Gi* cluster polygons from the selected city and year. Red polygons represent hotspots (clusters of relatively high surface heat), while blue polygons represent coldspots (clusters of relatively cool surface conditions).",
+        units: "Categorical hotspot/coldspot classes derived from the hotspot analysis output.",
         interpret: [
-          "Hotspots can indicate persistent heat-risk locations such as dense built-up areas with low vegetation.",
-          "Use hotspots together with context layers (NDVI/NDBI/LCZ, proximity to water) to interpret drivers.",
-          "If hotspots are statistical, they reflect clustering, not just high absolute values."
+          "Turn the Hotspots switch on to load the matching city-year GeoJSON file. Hotspot and coldspot polygons are shown together to keep the map behavior simple and reliable.",
+          "Hotspots can indicate persistent heat-risk locations such as dense built-up areas with low vegetation, while coldspots often coincide with greener, wetter, or less urbanized surfaces.",
+          "Because these are spatial clusters, they represent local concentration patterns rather than just isolated high or low pixels."
         ],
         limitations: [
           "Results depend on the method and parameters (neighborhood distance/bandwidth, multiple testing, thresholds).",
@@ -2973,15 +3274,15 @@
       },
 
       hotspots: {
-        title: "Hotspots",
-        subtitle: "Orte mit ungewöhnlich hohen Werten im lokalen Umfeld",
+        title: "Hotspots & Coldspots",
+        subtitle: "Statistisch gehäufte heiße und kühle Oberflächenbereiche",
         what:
-          "Hotspots markieren Bereiche, die im Vergleich zu ihrer Nachbarschaft auffällig hohe Werte zeigen (z. B. hohe SUHI/LST). Häufig werden lokale räumliche Statistiken (z. B. Gi*) oder Schwellenwerte genutzt.",
-        units: "Methodenabhängig (z. B. z-Scores/p-Werte oder °C-Schwellen).",
+          "Dieser Layer zeigt aufgelöste Gi*-Clusterpolygone für die gewählte Stadt und das gewählte Jahr. Rote Polygone markieren Hotspots (Cluster relativ hoher Oberflächenwärme), blaue Polygone markieren Coldspots (Cluster relativ kühler Oberflächenbedingungen).",
+        units: "Kategoriale Hotspot-/Coldspot-Klassen aus der Hotspot-Analyse.",
         interpret: [
-          "Kann auf potenziell hitzerelevante Orte hinweisen (dichte Bebauung, wenig Vegetation).",
-          "Zusammen mit NDVI/NDBI/LCZ und Wasser interpretieren.",
-          "Bei statistischen Hotspots geht es um Cluster, nicht nur um absolute Maxima."
+          "Schalte den Layer Hotspots ein, um die passende GeoJSON-Datei für Stadt und Jahr zu laden. Hotspot- und Coldspot-Polygone werden gemeinsam angezeigt, damit die Darstellung stabil und einfach bleibt.",
+          "Hotspots weisen oft auf dichte, stärker versiegelte und vegetationsarme Bereiche hin; Coldspots fallen häufig mit grüneren, feuchteren oder weniger urbanen Flächen zusammen.",
+          "Da es sich um räumliche Cluster handelt, zeigen die Polygone lokale Konzentrationsmuster und nicht nur einzelne extreme Pixel."
         ],
         limitations: [
           "Ergebnis hängt von Methode/Parametern ab (Nachbarschaft, Bandbreite, Schwellen).",
@@ -3133,6 +3434,8 @@
         env_drivers: "Environmental Drivers",
         morphometrics: "Urban Morphometrics",
         layer_hotspots: "Hotspots",
+        layer_hotspots_hot: "Hotspots",
+        layer_hotspots_cold: "Coldspots",
         layer_greenness: "Greenness",
         layer_builtup: "Built-up",
         layer_water: "Water Proximity",
@@ -3191,6 +3494,8 @@
         env_drivers: "Umweltfaktoren",
         morphometrics: "Stadtmorphometrie",
         layer_hotspots: "Hotspots",
+        layer_hotspots_hot: "Hotspots",
+        layer_hotspots_cold: "Coldspots",
         layer_greenness: "Vegetation",
         layer_builtup: "Bebauung",
         layer_water: "Wassernähe",
@@ -3536,26 +3841,53 @@
         </div>`;
     }
 
+    function renderHotspotLegend(){
+      return `
+        <div class="legendGroup">
+          <div class="legendGroupTitle">Hotspots</div>
+          <div class="legendList">
+            <div class="legendItem">
+              <span class="legendSwatch" style="background: rgba(255, 82, 82, 0.88);"></span>
+              <span class="legendClassCode">Hot</span>
+              <span class="legendClassLabel">Hotspot clusters</span>
+            </div>
+            <div class="legendItem">
+              <span class="legendSwatch" style="background: rgba(58, 160, 255, 0.88);"></span>
+              <span class="legendClassCode">Cold</span>
+              <span class="legendClassLabel">Coldspot clusters</span>
+            </div>
+          </div>
+        </div>`;
+    }
+
     function renderLegend(){
       const panel = document.getElementById("mapLegendPanel");
       const card = document.getElementById("mapLegendCard");
       const titleEl = document.getElementById("mapLegendTitle");
       if (!panel || !card || !titleEl) return;
 
+      const sections = [];
       const topKey = getTopVisibleRasterKey();
-      if (!topKey) {
+      const hotspotLegend = getHotspotParentEnabled() ? renderHotspotLegend() : "";
+
+      if (topKey) {
+        if (topKey === "lcz") {
+          sections.push(renderLczLegend());
+        } else {
+          sections.push(renderContinuousLegend(topKey));
+        }
+      }
+      if (hotspotLegend) sections.push(hotspotLegend);
+
+      if (!sections.length) {
         card.classList.remove("open");
         panel.innerHTML = "";
         titleEl.textContent = "Legend";
         return;
       }
 
-      titleEl.textContent = getLegendLayerLabel(topKey);
-      if (topKey === "lcz") {
-        panel.innerHTML = renderLczLegend();
-      } else {
-        panel.innerHTML = renderContinuousLegend(topKey);
-      }
+      titleEl.textContent = topKey ? getLegendLayerLabel(topKey) : "Legend";
+      panel.innerHTML = sections.join("");
       card.classList.add("open");
     }
 
@@ -3600,7 +3932,7 @@
     }
 
     function wireLayerSwitches(){
-      document.querySelectorAll(".layerRow").forEach((row) => {
+      document.querySelectorAll(".layerRow, .subLayerRow").forEach((row) => {
         row.addEventListener("click", (e) => {
           if (e.target && (e.target.tagName === "INPUT" || e.target.classList.contains("slider"))) return;
           if (e.target && e.target.closest && e.target.closest(".infoBtn")) return;
@@ -3616,7 +3948,7 @@
       document.querySelectorAll(".layerSwitch").forEach((cb) => {
         const key = cb.dataset.layer;
         const state = getLayerState();
-        cb.checked = !!state[key];
+        cb.checked = Object.prototype.hasOwnProperty.call(state, key) ? !!state[key] : false;
 
         if (RASTER_KEYS.includes(key)) {
           updateOpacityControlVisibility(key, cb.checked);
@@ -3625,6 +3957,9 @@
         } else if (key === "buildings3d") {
           buildingsEnabled = cb.checked;
           void updateBuildingsVisibility().catch(console.error);
+        } else if (key === "hotspots") {
+          updateHotspotSubLayerGroup();
+          applyHotspotVisibility();
         } else {
           setVisible(LAYER_REGISTRY[key], cb.checked);
         }
@@ -3658,6 +3993,12 @@
             return;
           }
 
+          if (key === "hotspots") {
+            updateHotspotSubLayerGroup();
+            await refreshHotspotLayers();
+            return;
+          }
+
           const ref = LAYER_REGISTRY[key];
           if (!ref) {
             console.warn(`Layer "${key}" is not registered yet. Once you add it, the switch will control it.`);
@@ -3666,6 +4007,8 @@
           setVisible(ref, on);
         });
       });
+
+      updateHotspotSubLayerGroup();
     }
 
     (async () => {
@@ -3749,6 +4092,7 @@
       window.registerLayer = registerLayer;
       window.LAYER_REGISTRY = LAYER_REGISTRY;
       window.refreshRasterLayers = refreshRasterLayers;
+      window.refreshHotspotLayers = refreshHotspotLayers;
       window.removeValueLabel = removeValueLabel;
     })();
 
