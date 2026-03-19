@@ -14,6 +14,7 @@
       --frame-pad: 10px;
       --frame-r: 18px;
       --header-h: 80px;
+      --notice-h: 40px;
       --toolbar-h: 54px;
       --footer-h: 30px;
       --left-w: 310px;
@@ -189,6 +190,55 @@
       image-rendering: crisp-edges;
     }
 
+    #devNotice{
+      min-height: var(--notice-h);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 18px;
+      background: linear-gradient(180deg, rgba(24,40,74,0.92), rgba(15,24,46,0.76));
+      border-bottom: 1px solid var(--stroke);
+      box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-sizing: border-box;
+    }
+
+    html[data-theme="light"] #devNotice{
+      background: linear-gradient(180deg, rgba(231,238,247,0.96), rgba(242,246,250,0.94));
+      box-shadow: 0 1px 0 rgba(255,255,255,0.70) inset;
+    }
+
+    .devNoticeBadge{
+      flex: 0 0 auto;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 10.5px;
+      font-weight: 800;
+      letter-spacing: 0.35px;
+      text-transform: uppercase;
+      color: var(--text);
+      background: rgba(255,255,255,0.08);
+      border: 1px solid var(--strokeSoft);
+      white-space: nowrap;
+    }
+
+    html[data-theme="light"] .devNoticeBadge{
+      background: rgba(255,255,255,0.78);
+    }
+
+    .devNoticeText{
+      min-width: 0;
+      font-size: 12.5px;
+      line-height: 1.4;
+      color: var(--text);
+      opacity: 0.96;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     #toolbar{
       height: var(--toolbar-h);
       display: flex;
@@ -262,7 +312,7 @@
       margin-left: auto;
       display:flex;
       align-items:center;
-      gap:8px;
+      gap:6px;
     }
 
     .topPill{
@@ -330,7 +380,7 @@
     .themeToggle{ font-weight:700; }
 
     #content{
-      height: calc(100% - var(--header-h) - var(--toolbar-h) - var(--footer-h));
+      height: calc(100% - var(--header-h) - var(--notice-h) - var(--toolbar-h) - var(--footer-h));
       display: flex;
       min-height: 0;
     }
@@ -395,6 +445,208 @@
       padding: 12px;
     }
     html[data-theme="light"] .empty{ background: rgba(250,246,238,0.55); }
+
+    #legendCard{
+      display:none;
+      border-color: rgba(70, 224, 130, 0.22);
+    }
+
+    #mapLegendCard{
+      position:absolute;
+      right:16px;
+      bottom:84px;
+      width:min(255px, calc(100% - 24px));
+      max-height:min(468px, calc(100% - 112px));
+      display:none;
+      flex-direction:column;
+      overflow:hidden;
+      z-index:49;
+      pointer-events:auto;
+      background: var(--cardBg);
+      border:1px solid rgba(70, 224, 130, 0.22);
+      border-radius:16px;
+      box-shadow:
+        0 18px 48px rgba(0,0,0,0.28),
+        0 0 0 1px rgba(255,255,255,0.05) inset;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    #mapLegendCard.open{ display:flex; }
+
+    #mapLegendHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      padding:12px 14px 10px;
+      border-bottom:1px solid var(--stroke);
+      background: linear-gradient(180deg, rgba(23,33,69,0.92), rgba(10,17,43,0.84));
+    }
+    html[data-theme="light"] #mapLegendHeader{
+      background: linear-gradient(180deg, rgba(245,248,255,0.96), rgba(234,240,252,0.92));
+    }
+
+    #mapLegendTitle{
+      font-size:13px;
+      font-weight:800;
+      letter-spacing:0.18px;
+      color:var(--text);
+    }
+
+    #mapLegendPanel{
+      padding:10px 12px 12px;
+    }
+
+    .legendPanel{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      max-height:none;
+      overflow:visible;
+      padding-right:0;
+    }
+
+    .legendNote{
+      font-size:10.5px;
+      line-height:1.35;
+      color:var(--muted);
+      padding:9px 10px;
+      border-radius:12px;
+      border:1px solid var(--strokeSoft);
+      background:var(--legendBg);
+    }
+
+    .legendGroup{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+
+    .legendGroupTitle{
+      font-size:11px;
+      font-weight:800;
+      letter-spacing:0.18px;
+      color:var(--sectionTitle);
+      text-transform:uppercase;
+    }
+
+    .legendList{
+      display:grid;
+      grid-template-columns: minmax(0, 1fr);
+      gap:5px;
+    }
+
+    .legendItem{
+  display:grid;
+  grid-template-columns: 14px auto minmax(0, 1fr);
+  column-gap:7px;
+  row-gap:0;
+  align-items:center;
+  font-size:10.5px;
+  line-height:1.12;
+  min-width:0;
+}
+
+.legendSwatch{
+  width:14px;
+  height:14px;
+  border-radius:4px;
+  border:1px solid rgba(255,255,255,0.18);
+  box-shadow:0 0 0 1px rgba(0,0,0,0.06) inset;
+  margin-top:0;
+  margin-right:0;
+}
+
+.legendClassCode{
+  font-weight:800;
+  color:var(--text);
+  white-space:nowrap;
+  letter-spacing:-0.1px;
+  margin-right:0;
+  align-self:center;
+}
+
+.legendClassLabel{
+  color:var(--text);
+  min-width:0;
+  align-self:center;
+}
+
+    .legendClassAlias{
+      color:var(--muted);
+    }
+
+    .legendScaleCard{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+
+    .legendGradientBar{
+      width:100%;
+      height:14px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,0.16);
+      box-shadow:0 0 0 1px rgba(0,0,0,0.06) inset;
+    }
+
+    .legendTickRow{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:0;
+      margin-top:1px;
+    }
+
+    .legendTick{
+      position:relative;
+      flex:1 1 0;
+      padding-top:9px;
+      font-size:10.25px;
+      line-height:1.1;
+      color:var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .legendTick::before{
+      content:"";
+      position:absolute;
+      top:0;
+      left:50%;
+      width:1px;
+      height:6px;
+      background:rgba(255,255,255,0.28);
+      transform:translateX(-50%);
+    }
+
+    .legendTick:first-child{
+      text-align:left;
+    }
+
+    .legendTick:first-child::before{
+      left:0;
+      transform:none;
+    }
+
+    .legendTick:last-child{
+      text-align:right;
+    }
+
+    .legendTick:last-child::before{
+      left:auto;
+      right:0;
+      transform:none;
+    }
+
+    .legendTick:not(:first-child):not(:last-child){
+      text-align:center;
+    }
+
+    .legendContinuousNote{
+      font-size:10.5px;
+      line-height:1.35;
+      color:var(--muted);
+    }
 
     #mapArea{
       position: relative;
@@ -492,6 +744,19 @@
     .cesium-viewer-toolbar{
       top: 10px !important;
       right: 10px !important;
+      z-index: 140 !important;
+    }
+    .cesium-baseLayerPicker-dropDown{
+      top: calc(100% + 8px) !important;
+      right: 0 !important;
+      left: auto !important;
+      z-index: 180 !important;
+      max-height: min(72vh, 640px) !important;
+      overflow-y: auto !important;
+      overscroll-behavior: contain;
+    }
+    .cesium-baseLayerPicker-section{
+      max-height: none !important;
     }
 
     .layerBox{
@@ -602,6 +867,71 @@
     }
     .switch input:checked + .slider:before{
       transform: translate(20px, -50%);
+    }
+
+    .opacityControl{
+      display:none;
+      align-items:center;
+      gap:10px;
+      margin: -2px 8px 8px 8px;
+      padding: 8px 10px 10px 10px;
+      border-radius: 12px;
+      border: 1px solid var(--stroke);
+      background: rgba(255,255,255,0.03);
+    }
+    html[data-theme="light"] .opacityControl{
+      background: rgba(12,18,30,0.03);
+    }
+    .opacityControl.open{
+      display:flex;
+    }
+    .opacityLabel{
+      flex: 0 0 auto;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--muted);
+      min-width: 54px;
+    }
+    .opacityRange{
+      flex: 1 1 auto;
+      accent-color: #3aa0ff;
+      cursor: pointer;
+      min-width: 0;
+    }
+    .opacityValue{
+      flex: 0 0 auto;
+      width: 40px;
+      text-align: right;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    @media (max-width: 900px){
+      :root{
+        --notice-h: 58px;
+      }
+      #devNotice{
+        justify-content: flex-start;
+        align-items: flex-start;
+        padding-top: 8px;
+        padding-bottom: 8px;
+      }
+      .devNoticeText{
+        font-size: 11px;
+        line-height: 1.35;
+        white-space: normal;
+      }
+    }
+
+    @media (max-width: 900px){
+      #mapLegendCard{
+        width:min(320px, calc(100% - 20px));
+        right:10px;
+        bottom:76px;
+        max-height:min(470px, calc(100% - 96px));
+      }
     }
 
     #chatToggle{
@@ -880,6 +1210,11 @@
 
 <body>
   <div id="appFrame">
+    <div id="devNotice" role="note" aria-label="Development notice">
+      <span class="devNoticeBadge">Development Notice</span>
+      <div class="devNoticeText">This dashboard is a prototype currently under development. Some features may not yet be fully available, and content, functionality, and design may change over time.</div>
+    </div>
+
     <div id="header">
       <div class="titlePill">
         <div class="pillTopRow">
@@ -946,6 +1281,11 @@
           <div id="selectedInfo" style="font-size:13px; font-weight:700;">All cities • 2024</div>
         </div>
 
+        <div class="card" id="legendCard">
+          <div class="ct">LCZ Legend</div>
+          <div id="legendPanel" class="legendPanel"></div>
+        </div>
+
         <div class="card">
           <div class="ct">Layers</div>
 
@@ -979,7 +1319,8 @@
               </div>
             </div>
 
-            <div class="layerRow" data-toggle-row="hotspots">
+            <div class="layerList">
+              <div class="layerRow" data-toggle-row="hotspots">
               <div class="layerLeft">
                 <div class="layerNameWrap">
                   <span class="layerName">Hotspots</span>
@@ -990,6 +1331,7 @@
                 <input class="layerSwitch" type="checkbox" data-layer="hotspots" />
                 <span class="slider"></span>
               </label>
+              </div>
             </div>
 
             <div class="layerDivider"></div>
@@ -1082,10 +1424,6 @@
           </div>
         </div>
 
-        <div class="card">
-          <div class="ct">KPIs (placeholder)</div>
-          <div class="empty">Charts / stats will appear here</div>
-        </div>
       </aside>
 
       <main id="mapArea">
@@ -1096,6 +1434,13 @@
             <span id="lstValueNumber">0.0</span>
             <span id="lstValueUnit">°C</span>
           </div>
+        </div>
+
+        <div id="mapLegendCard" aria-live="polite">
+          <div id="mapLegendHeader">
+            <div id="mapLegendTitle">Legend</div>
+          </div>
+          <div id="mapLegendPanel" class="legendPanel"></div>
         </div>
 
         <div id="chatToggle" title="Ask the AI Assistant" aria-label="Open AI Assistant" role="button">🤖</div>
@@ -1180,43 +1525,88 @@
     const buildingTilesets = new Map();
     let buildingsEnabled = false;
 
-    const RASTER_KEYS = ["lst", "suhi", "ndvi", "ndbi", "ndwi", "albedo"];
-    const AVAILABLE_RASTER_KEYS = ["lst", "suhi", "ndvi", "ndbi", "ndwi"];
+    const RASTER_KEYS = ["lst", "suhi", "ndvi", "ndbi", "ndwi", "albedo", "lcz"];
+    const AVAILABLE_RASTER_KEYS = ["lst", "suhi", "ndvi", "ndbi", "ndwi", "lcz"];
     const rasterPriority = [];
 
     const rasterStates = {
-      lst:   { imageryLayer: null, currentUrl: null, currentCache: null, requestedToken: 0 },
-      suhi:  { imageryLayer: null, currentUrl: null, currentCache: null, requestedToken: 0 },
-      ndvi:  { imageryLayer: null, currentUrl: null, currentCache: null, requestedToken: 0 },
-      ndbi:  { imageryLayer: null, currentUrl: null, currentCache: null, requestedToken: 0 },
-      ndwi:  { imageryLayer: null, currentUrl: null, currentCache: null, requestedToken: 0 },
-      albedo:{ imageryLayer: null, currentUrl: null, currentCache: null, requestedToken: 0 }
+      lst:   { imageryLayer: null, imageryLayers: [], currentUrl: null, currentUrls: [], currentCache: null, currentCaches: [], requestedToken: 0 },
+      suhi:  { imageryLayer: null, imageryLayers: [], currentUrl: null, currentUrls: [], currentCache: null, currentCaches: [], requestedToken: 0 },
+      ndvi:  { imageryLayer: null, imageryLayers: [], currentUrl: null, currentUrls: [], currentCache: null, currentCaches: [], requestedToken: 0 },
+      ndbi:  { imageryLayer: null, imageryLayers: [], currentUrl: null, currentUrls: [], currentCache: null, currentCaches: [], requestedToken: 0 },
+      ndwi:  { imageryLayer: null, imageryLayers: [], currentUrl: null, currentUrls: [], currentCache: null, currentCaches: [], requestedToken: 0 },
+      albedo:{ imageryLayer: null, imageryLayers: [], currentUrl: null, currentUrls: [], currentCache: null, currentCaches: [], requestedToken: 0 },
+      lcz:   { imageryLayer: null, imageryLayers: [], currentUrl: null, currentUrls: [], currentCache: null, currentCaches: [], requestedToken: 0 }
     };
     const rasterAssetCache = new Map();
     let rasterClickHandler = null;
     let valueOverlayCartesian = null;
 
+    const LCZ_CLASSES = {
+      1:  { code: "1",  alias: "LCZ 1",  label: "Compact high-rise",    color: [140,   0,   0] },
+      2:  { code: "2",  alias: "LCZ 2",  label: "Compact mid-rise",     color: [209,   0,   0] },
+      3:  { code: "3",  alias: "LCZ 3",  label: "Compact low-rise",     color: [255,   0,   0] },
+      4:  { code: "4",  alias: "LCZ 4",  label: "Open high-rise",       color: [191,  77,   0] },
+      5:  { code: "5",  alias: "LCZ 5",  label: "Open mid-rise",        color: [255, 102,   0] },
+      6:  { code: "6",  alias: "LCZ 6",  label: "Open low-rise",        color: [255, 153,  85] },
+      7:  { code: "7",  alias: "LCZ 7",  label: "Lightweight low-rise", color: [250, 238,   5] },
+      8:  { code: "8",  alias: "LCZ 8",  label: "Large low-rise",       color: [188, 188, 188] },
+      9:  { code: "9",  alias: "LCZ 9",  label: "Sparsely built",       color: [255, 204, 170] },
+      10: { code: "10", alias: "LCZ 10", label: "Heavy industry",       color: [ 85,  85,  85] },
+      11: { code: "11", alias: "LCZ A",  label: "Dense trees",          color: [  0, 106,   0] },
+      12: { code: "12", alias: "LCZ B",  label: "Scattered trees",      color: [  0, 170,   0] },
+      13: { code: "13", alias: "LCZ C",  label: "Bush / scrub",         color: [100, 133,  37] },
+      14: { code: "14", alias: "LCZ D",  label: "Low plants",           color: [185, 219, 121] },
+      15: { code: "15", alias: "LCZ E",  label: "Bare rock or paved",   color: [  0,   0,   0] },
+      16: { code: "16", alias: "LCZ F",  label: "Bare soil or sand",    color: [251, 247, 174] },
+      17: { code: "17", alias: "LCZ G",  label: "Water",                color: [106, 106, 255] }
+    };
+    const LCZ_LEGEND_ORDER = Object.keys(LCZ_CLASSES).map(Number).sort((a, b) => a - b);
+
     const RASTER_SPECS = {
       lst: {
+        key: "lst",
         title: "LST",
         unit: "°C",
-        alpha: 0.85,
+        alpha: 1.0,
+        getDisplayRange(year){
+          return String(year) === "2024"
+            ? { min: 15, max: 37 }
+            : { min: 15, max: 40 };
+        },
+        getLegendTicks(year){
+          return String(year) === "2024"
+            ? ["15", "20", "25", "30", "35", "37"]
+            : ["15", "20", "25", "30", "35", "40+"];
+        },
+        getLegendColorScaleMax(year){
+          return String(year) === "2024" ? 37 : 40;
+        },
+        legendNote: "Surface temperatures use year-specific ranges so the full LST palette spans 15–40+ °C in 2022 and 15–37 °C in 2024.",
         candidates(city, year){
           return [`data/rasters/LST/${year}_LST_${city}_c_4326_cog.tif`];
         }
       },
       suhi: {
+        key: "suhi",
         title: "SUHI",
         unit: "°C",
-        alpha: 0.85,
+        alpha: 1.0,
+        displayRange: { min: -10, max: 13 },
+        legendTicks: ["-10", "-5", "0", "5", "10", "13"],
+        legendNote: "Negative values indicate cooler urban surfaces than the reference; positive values indicate hotter surfaces.",
         candidates(city, year){
           return [`data/rasters/SUHI/${year}_SUHI_${city}_4326_cog.tif`];
         }
       },
       ndvi: {
+        key: "ndvi",
         title: "NDVI",
         unit: "",
-        alpha: 0.80,
+        alpha: 1.0,
+        displayRange: { min: -1, max: 1 },
+        legendTicks: ["-1", "-0.5", "0", "0.5", "1"],
+        legendNote: "Lower values represent sparse/non-vegetated surfaces; higher values represent denser greenness.",
         candidates(city, year){
           return [
             `data/rasters/NDVI/NDVI_${city}_${year}_10m_4326_cog.tif`,
@@ -1227,9 +1617,13 @@
         }
       },
       ndbi: {
+        key: "ndbi",
         title: "NDBI",
         unit: "",
-        alpha: 0.80,
+        alpha: 1.0,
+        displayRange: { min: -1, max: 1 },
+        legendTicks: ["-1", "-0.5", "0", "0.5", "1"],
+        legendNote: "Lower values usually correspond more to vegetation or water; higher values indicate stronger built-up signatures.",
         candidates(city, year){
           const yOrder = Array.from(new Set([year, "2024", "2022"]));
           const out = [];
@@ -1243,9 +1637,13 @@
         }
       },
       ndwi: {
+        key: "ndwi",
         title: "MNDWI",
         unit: "",
-        alpha: 0.80,
+        alpha: 1.0,
+        displayRange: { min: -1, max: 1 },
+        legendTicks: ["-1", "-0.5", "0", "0.5", "1"],
+        legendNote: "Lower values represent drier or built surfaces; higher values show stronger water signatures.",
         candidates(city, year){
           const yOrder = Array.from(new Set([year, "2024", "2022"]));
           const out = [];
@@ -1261,16 +1659,93 @@
         }
       },
       albedo: {
+        key: "albedo",
         title: "Albedo",
         unit: "",
-        alpha: 0.80,
+        alpha: 1.0,
+        displayRange: { min: 0, max: 1 },
+        legendTicks: ["0", "0.25", "0.5", "0.75", "1"],
+        legendNote: "Darker shades indicate lower reflectance and lighter shades indicate higher reflectance.",
         candidates(city, year){
           return [
             `data/rasters/Albedo/Albedo_${city}_${year}_4326_cog.tif`,
             `data/rasters/Albedo/ALBEDO_${city}_${year}_4326_cog.tif`
           ];
         }
+      },
+      lcz: {
+        key: "lcz",
+        title: "LCZ",
+        alpha: 1.0,
+        allowAllCities: true,
+        renderMode: "categorical",
+        nodataValue: 0,
+        classMap: LCZ_CLASSES,
+        candidates(){
+          return ["data/rasters/LCZ/LCZ_COG.tif"];
+        },
+        formatValue(value){
+          const cls = LCZ_CLASSES[Math.round(value)];
+          if (!cls) return { primary: `Class ${Math.round(value)}`, secondary: "LCZ" };
+          const secondary = Number(cls.code) >= 11 ? `${cls.label} (${cls.alias})` : cls.label;
+          return { primary: `Class ${cls.code}`, secondary };
+        }
       }
+    };
+
+    // LST ramp variant: inferno-style high contrast thermal
+    const RASTER_COLOR_STOPS = {
+      lst: [
+        [0.00, [0, 0, 4]],
+        [0.15, [31, 12, 72]],
+        [0.35, [85, 15, 109]],
+        [0.55, [136, 34, 106]],
+        [0.72, [186, 54, 85]],
+        [0.86, [227, 89, 51]],
+        [0.94, [249, 140, 10]],
+        [1.00, [252, 255, 164]],
+
+      ],
+      suhi: [
+        [0.00, [49, 54, 149]],
+        [0.18, [69, 117, 180]],
+        [0.34, [171, 217, 233]],
+        [0.4348, [235, 247, 250]],
+        [0.50, [255, 245, 235]],
+        [0.64, [254, 224, 144]],
+        [0.80, [244, 109, 67]],
+        [1.00, [215, 48, 39]]
+      ],
+      ndvi: [
+        [0.00, [120, 72, 32]],
+        [0.28, [191, 140, 74]],
+        [0.50, [246, 232, 153]],
+        [0.72, [167, 209, 120]],
+        [1.00, [26, 120, 52]]
+      ],
+      ndbi: [
+        [0.00, [15, 63, 112]],
+        [0.16, [49, 105, 166]],
+        [0.34, [156, 202, 236]],
+        [0.47, [233, 242, 248]],
+        [0.50, [247, 245, 239]],
+        [0.55, [248, 223, 183]],
+        [0.68, [238, 165, 83]],
+        [0.82, [201, 108, 34]],
+        [1.00, [116, 58, 18]]
+      ],
+      ndwi: [
+        [0.00, [143, 84, 44]],
+        [0.30, [222, 192, 141]],
+        [0.50, [245, 245, 245]],
+        [0.72, [144, 224, 239]],
+        [1.00, [32, 84, 173]]
+      ],
+      albedo: [
+        [0.00, [52, 52, 52]],
+        [0.50, [176, 176, 176]],
+        [1.00, [245, 245, 245]]
+      ]
     };
 
     function markRasterPriority(key){
@@ -1283,13 +1758,13 @@
       for (let i = rasterPriority.length - 1; i >= 0; i--) {
         const key = rasterPriority[i];
         const rs = rasterStates[key];
-        if (AVAILABLE_RASTER_KEYS.includes(key) && getLayerEnabled(key) && rs?.imageryLayer?.show && rs?.currentCache) {
+        if (AVAILABLE_RASTER_KEYS.includes(key) && getLayerEnabled(key) && hasVisibleRasterState(rs) && getRasterCaches(rs).length) {
           return key;
         }
       }
       for (const key of RASTER_KEYS) {
         const rs = rasterStates[key];
-        if (AVAILABLE_RASTER_KEYS.includes(key) && getLayerEnabled(key) && rs?.imageryLayer?.show && rs?.currentCache) {
+        if (AVAILABLE_RASTER_KEYS.includes(key) && getLayerEnabled(key) && hasVisibleRasterState(rs) && getRasterCaches(rs).length) {
           return key;
         }
       }
@@ -1323,12 +1798,87 @@
       return !!el?.checked;
     }
 
-    function computeFiniteMinMax(values){
+    function getRasterLayers(state){
+      if (!state) return [];
+      if (Array.isArray(state.imageryLayers) && state.imageryLayers.length) {
+        return state.imageryLayers.filter(Boolean);
+      }
+      return state.imageryLayer ? [state.imageryLayer] : [];
+    }
+
+    function getRasterCaches(state){
+      if (!state) return [];
+      if (Array.isArray(state.currentCaches) && state.currentCaches.length) {
+        return state.currentCaches.filter(Boolean);
+      }
+      return state.currentCache ? [state.currentCache] : [];
+    }
+
+    function clearRasterStateRefs(state){
+      if (!state) return;
+      state.imageryLayer = null;
+      state.imageryLayers = [];
+      state.currentUrl = null;
+      state.currentUrls = [];
+      state.currentCache = null;
+      state.currentCaches = [];
+    }
+
+    function setRasterSingleState(state, layer, url, cache){
+      clearRasterStateRefs(state);
+      state.imageryLayer = layer || null;
+      state.imageryLayers = layer ? [layer] : [];
+      state.currentUrl = url || null;
+      state.currentUrls = url ? [url] : [];
+      state.currentCache = cache || null;
+      state.currentCaches = cache ? [cache] : [];
+    }
+
+    function setRasterMultiState(state, layers, urls, caches){
+      clearRasterStateRefs(state);
+      state.imageryLayers = Array.isArray(layers) ? layers.filter(Boolean) : [];
+      state.imageryLayer = state.imageryLayers[0] || null;
+      state.currentUrls = Array.isArray(urls) ? urls.slice() : [];
+      state.currentUrl = state.currentUrls[0] || null;
+      state.currentCaches = Array.isArray(caches) ? caches.filter(Boolean) : [];
+      state.currentCache = state.currentCaches[0] || null;
+    }
+
+    function hideRasterStateLayers(state){
+      for (const layer of getRasterLayers(state)) {
+        layer.show = false;
+      }
+    }
+
+    function removeRasterStateLayers(state){
+      if (!state || !viewer) {
+        clearRasterStateRefs(state);
+        return;
+      }
+      for (const layer of getRasterLayers(state)) {
+        viewer.imageryLayers.remove(layer, false);
+      }
+      clearRasterStateRefs(state);
+    }
+
+    function hasVisibleRasterState(state){
+      return getRasterLayers(state).some(layer => !!layer?.show);
+    }
+
+    function sameStringArrays(a, b){
+      if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) return false;
+      }
+      return true;
+    }
+
+    function computeFiniteMinMax(values, nodataValue){
       let min = Infinity;
       let max = -Infinity;
       for (let i = 0; i < values.length; i++) {
         const v = values[i];
-        if (!Number.isFinite(v)) continue;
+        if (!Number.isFinite(v) || (Number.isFinite(nodataValue) && v === nodataValue)) continue;
         if (v < min) min = v;
         if (v > max) max = v;
       }
@@ -1339,16 +1889,7 @@
 
     function lerp(a, b, t){ return a + (b - a) * t; }
 
-    function heatRampColor(t){
-      const stops = [
-        [0.00, [49, 54, 149]],
-        [0.20, [69, 117, 180]],
-        [0.40, [116, 173, 209]],
-        [0.55, [171, 217, 233]],
-        [0.70, [254, 224, 144]],
-        [0.85, [253, 174, 97]],
-        [1.00, [215, 25, 28]]
-      ];
+    function interpolateColorStops(stops, t){
       const x = Math.max(0, Math.min(1, t));
       for (let i = 0; i < stops.length - 1; i++) {
         const [t0, c0] = stops[i];
@@ -1365,14 +1906,86 @@
       return stops[stops.length - 1][1];
     }
 
-    function buildCanvasFromFloatRaster(values, width, height, min, max, nodataValue){
+    function getRasterDisplayRange(spec, fallback, year = selectedYear){
+      if (typeof spec?.getDisplayRange === "function") {
+        const range = spec.getDisplayRange(year);
+        if (range && Number.isFinite(range.min) && Number.isFinite(range.max)) {
+          return { min: range.min, max: range.max };
+        }
+      }
+      if (spec?.displayRange && Number.isFinite(spec.displayRange.min) && Number.isFinite(spec.displayRange.max)) {
+        return { min: spec.displayRange.min, max: spec.displayRange.max };
+      }
+      return fallback;
+    }
+
+    function getRasterLegendTicks(spec, year = selectedYear){
+      if (typeof spec?.getLegendTicks === "function") {
+        const ticks = spec.getLegendTicks(year);
+        if (Array.isArray(ticks) && ticks.length) return ticks;
+      }
+      if (Array.isArray(spec?.legendTicks) && spec.legendTicks.length) return spec.legendTicks;
+      const range = getRasterDisplayRange(spec, { min: 0, max: 1 }, year);
+      return [String(range.min), String(range.max)];
+    }
+
+    function getRasterColor(key, value, min, max){
+      const span = (max - min) || 1;
+      const tt = Math.max(0, Math.min(1, (value - min) / span));
+      const stops = RASTER_COLOR_STOPS[key] || RASTER_COLOR_STOPS.lst;
+      return interpolateColorStops(stops, tt);
+    }
+
+    function truncateColorStops(stops, maxT){
+      const clampedMax = Math.max(0, Math.min(1, maxT));
+      if (clampedMax <= 0) return [[0, stops[0][1]], [1, stops[0][1]]];
+      if (clampedMax >= 1) return stops;
+      const out = [];
+      for (let i = 0; i < stops.length; i++) {
+        const [t, color] = stops[i];
+        if (t < clampedMax) out.push([t, color]);
+        if (t === clampedMax) {
+          out.push([t, color]);
+          break;
+        }
+        if (t > clampedMax) {
+          out.push([clampedMax, interpolateColorStops(stops, clampedMax)]);
+          break;
+        }
+      }
+      if (!out.length) out.push([0, interpolateColorStops(stops, clampedMax)]);
+      const lastT = out[out.length - 1][0] || clampedMax;
+      return out.map(([t, color]) => [t / lastT, color]);
+    }
+
+    function getLegendGradientStops(key, year = selectedYear){
+      const spec = RASTER_SPECS[key];
+      const baseStops = RASTER_COLOR_STOPS[key] || RASTER_COLOR_STOPS.lst;
+      if (typeof spec?.getLegendColorScaleMax === "function") {
+        const legendMax = spec.getLegendColorScaleMax(year);
+        const displayRange = getRasterDisplayRange(spec, { min: 0, max: 1 }, year);
+        const span = (displayRange.max - displayRange.min) || 1;
+        if (Number.isFinite(legendMax) && legendMax < displayRange.max) {
+          const frac = (legendMax - displayRange.min) / span;
+          return truncateColorStops(baseStops, frac);
+        }
+      }
+      return baseStops;
+    }
+
+    function buildLegendGradientCss(key, year = selectedYear){
+      const stops = getLegendGradientStops(key, year);
+      const parts = stops.map(([t, color]) => `${rgbToCss(color)} ${Math.round(t * 1000) / 10}%`);
+      return `linear-gradient(90deg, ${parts.join(', ')})`;
+    }
+
+    function buildCanvasFromFloatRaster(values, width, height, min, max, nodataValue, layerKey){
       const canvas = document.createElement("canvas");
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext("2d", { willReadFrequently: false });
       const img = ctx.createImageData(width, height);
       const rgba = img.data;
-      const span = (max - min) || 1;
       for (let i = 0; i < values.length; i++) {
         const v = values[i];
         const j = i * 4;
@@ -1384,13 +1997,44 @@
           rgba[j + 3] = 0;
           continue;
         }
-        const tt = Math.max(0, Math.min(1, (v - min) / span));
-        const [r, g, b] = heatRampColor(tt);
+        const [r, g, b] = getRasterColor(layerKey, v, min, max);
         rgba[j + 0] = r;
         rgba[j + 1] = g;
         rgba[j + 2] = b;
-        rgba[j + 3] = 185;
+        rgba[j + 3] = 255;
       }
+      ctx.putImageData(img, 0, 0);
+      return canvas;
+    }
+
+    function buildCanvasFromCategoricalRaster(values, width, height, nodataValue, classMap){
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d", { willReadFrequently: false });
+      const img = ctx.createImageData(width, height);
+      const rgba = img.data;
+
+      for (let i = 0; i < values.length; i++) {
+        const v = values[i];
+        const j = i * 4;
+        const classValue = Math.round(v);
+        const cls = classMap[classValue];
+        const isNoData = !Number.isFinite(v) || (Number.isFinite(nodataValue) && v === nodataValue) || !cls;
+        if (isNoData) {
+          rgba[j + 0] = 0;
+          rgba[j + 1] = 0;
+          rgba[j + 2] = 0;
+          rgba[j + 3] = 0;
+          continue;
+        }
+        const [r, g, b] = cls.color;
+        rgba[j + 0] = r;
+        rgba[j + 1] = g;
+        rgba[j + 2] = b;
+        rgba[j + 3] = 255;
+      }
+
       ctx.putImageData(img, 0, 0);
       return canvas;
     }
@@ -1440,15 +2084,24 @@
       valueOverlayEl.classList.add("show");
     }
 
-    function showValueLabel(lon, lat, value, unit){
-      valueNumberEl.textContent = value.toFixed(2);
-      valueUnitEl.textContent = unit || "";
-      valueUnitEl.style.display = unit ? "" : "none";
+    function showValueLabel(lon, lat, primaryText, secondaryText = ""){
+      valueNumberEl.textContent = primaryText;
+      valueUnitEl.textContent = secondaryText || "";
+      valueUnitEl.style.display = secondaryText ? "" : "none";
       valueOverlayCartesian = Cesium.Cartesian3.fromDegrees(lon, lat);
       updateValueOverlayScreenPosition();
     }
 
-    async function loadRasterAsset(url, specTitle){
+    function formatRasterValue(spec, value){
+      if (typeof spec?.formatValue === "function") return spec.formatValue(value);
+      const decimals = Number.isInteger(spec?.valueDecimals) ? spec.valueDecimals : 2;
+      return {
+        primary: Number.isFinite(value) ? value.toFixed(decimals) : "No data",
+        secondary: spec?.unit || ""
+      };
+    }
+
+    async function loadRasterAsset(url, spec, layerKey){
       if (rasterAssetCache.has(url)) return rasterAssetCache.get(url);
 
       const tiff = await GeoTIFF.fromUrl(url);
@@ -1457,20 +2110,25 @@
       const height = image.getHeight();
       const bbox = image.getBoundingBox();
       const nodataRaw = image.getGDALNoData();
-      const nodataValue = nodataRaw == null ? null : Number(nodataRaw);
+      const nodataParsed = nodataRaw == null ? null : Number(nodataRaw);
+      const nodataValue = Number.isFinite(spec?.nodataValue) ? spec.nodataValue : nodataParsed;
       const rasters = await image.readRasters({ interleave: true });
       const values = (rasters instanceof Float32Array || rasters instanceof Float64Array) ? rasters : Float32Array.from(rasters);
-      const mm = computeFiniteMinMax(values);
-      const canvas = buildCanvasFromFloatRaster(values, width, height, mm.min, mm.max, nodataValue);
+      const mm = computeFiniteMinMax(values, nodataValue);
+      const displayRange = getRasterDisplayRange(spec, mm, selectedYear);
+      const canvas = spec?.renderMode === "categorical"
+        ? buildCanvasFromCategoricalRaster(values, width, height, nodataValue, spec.classMap || {})
+        : buildCanvasFromFloatRaster(values, width, height, displayRange.min, displayRange.max, nodataValue, layerKey);
       const dataUrl = canvas.toDataURL("image/png");
       const rectangle = Cesium.Rectangle.fromDegrees(bbox[0], bbox[1], bbox[2], bbox[3]);
       const asset = {
         width, height, bbox, nodataValue, values,
         min: mm.min, max: mm.max,
+        displayMin: displayRange.min, displayMax: displayRange.max,
         dataUrl, rectangle
       };
       rasterAssetCache.set(url, asset);
-      console.log(`[Raster] ${specTitle} loaded`, { url, width, height, bbox, min: mm.min, max: mm.max, nodata: nodataRaw });
+      console.log(`[Raster] ${spec?.title || "Raster"} loaded`, { url, width, height, bbox, min: mm.min, max: mm.max, nodata: nodataRaw });
       return asset;
     }
 
@@ -1479,9 +2137,68 @@
       const state = rasterStates[key];
       if (!spec || !state || !viewer) return;
 
-      if (selectedCity === "ALL" || !getLayerEnabled(key)) {
-        if (state.imageryLayer) state.imageryLayer.show = false;
+      const allowsAllCities = !!spec.allowAllCities;
+      if (!getLayerEnabled(key)) {
+        hideRasterStateLayers(state);
         if (getTopVisibleRasterKey() !== key) removeValueLabel();
+        return;
+      }
+
+      if (selectedCity === "ALL" && !allowsAllCities) {
+        const token = ++state.requestedToken;
+        const cityUrls = [];
+
+        for (const assetMeta of ASSETS) {
+          const url = await resolveRasterUrl(key, assetMeta.name, selectedYear);
+          if (url) cityUrls.push(url);
+        }
+
+        if (token !== state.requestedToken) return;
+
+        if (!cityUrls.length) {
+          console.warn(`[Raster] No source found for ${key} ALL ${selectedYear}`);
+          hideRasterStateLayers(state);
+          if (getTopVisibleRasterKey() !== key) removeValueLabel();
+          return;
+        }
+
+        const existingLayers = getRasterLayers(state);
+        const existingCaches = getRasterCaches(state);
+        if (sameStringArrays(state.currentUrls || [], cityUrls) && existingLayers.length === cityUrls.length && existingCaches.length === cityUrls.length) {
+          for (const layer of existingLayers) {
+            layer.show = true;
+            layer.alpha = getRasterOpacity(key);
+            viewer.imageryLayers.raiseToTop(layer);
+          }
+          markRasterPriority(key);
+          return;
+        }
+
+        const loaded = [];
+        for (const url of cityUrls) {
+          const asset = await loadRasterAsset(url, spec, key);
+          if (token !== state.requestedToken) return;
+          loaded.push({ url, asset });
+        }
+
+        removeRasterStateLayers(state);
+
+        const layers = [];
+        for (const item of loaded) {
+          const provider = new Cesium.SingleTileImageryProvider({
+            url: item.asset.dataUrl,
+            rectangle: item.asset.rectangle
+          });
+          const layer = viewer.imageryLayers.addImageryProvider(provider);
+          layer.alpha = getRasterOpacity(key);
+          layer.show = true;
+          layers.push(layer);
+          viewer.imageryLayers.raiseToTop(layer);
+        }
+
+        setRasterMultiState(state, layers, loaded.map(item => item.url), loaded.map(item => item.asset));
+        if (layers[0]) registerLayer(key, layers[0]);
+        markRasterPriority(key);
         return;
       }
 
@@ -1492,25 +2209,27 @@
 
       if (!url) {
         console.warn(`[Raster] No source found for ${key} ${selectedCity} ${selectedYear}`);
-        if (state.imageryLayer) state.imageryLayer.show = false;
+        hideRasterStateLayers(state);
         if (getTopVisibleRasterKey() !== key) removeValueLabel();
         return;
       }
 
-      if (state.currentUrl === url && state.imageryLayer && state.currentCache) {
-        state.imageryLayer.show = true;
-        viewer.imageryLayers.raiseToTop(state.imageryLayer);
+      const existingLayers = getRasterLayers(state);
+      const existingCaches = getRasterCaches(state);
+      if (state.currentUrl === url && existingLayers.length === 1 && existingCaches.length === 1) {
+        for (const layer of existingLayers) {
+          layer.show = true;
+          layer.alpha = getRasterOpacity(key);
+          viewer.imageryLayers.raiseToTop(layer);
+        }
         markRasterPriority(key);
         return;
       }
 
-      const asset = await loadRasterAsset(url, spec.title);
+      const asset = await loadRasterAsset(url, spec, key);
       if (token !== state.requestedToken) return;
 
-      if (state.imageryLayer) {
-        viewer.imageryLayers.remove(state.imageryLayer, false);
-        state.imageryLayer = null;
-      }
+      removeRasterStateLayers(state);
 
       const provider = new Cesium.SingleTileImageryProvider({
         url: asset.dataUrl,
@@ -1518,12 +2237,10 @@
       });
 
       const layer = viewer.imageryLayers.addImageryProvider(provider);
-      layer.alpha = spec.alpha ?? 0.85;
+      layer.alpha = getRasterOpacity(key);
       layer.show = true;
 
-      state.imageryLayer = layer;
-      state.currentUrl = url;
-      state.currentCache = asset;
+      setRasterSingleState(state, layer, url, asset);
 
       registerLayer(key, layer);
       viewer.imageryLayers.raiseToTop(layer);
@@ -1539,7 +2256,7 @@
       // unsupported toggles: keep hidden
       for (const key of ["albedo"]) {
         const s = rasterStates[key];
-        if (s?.imageryLayer) s.imageryLayer.show = false;
+        hideRasterStateLayers(s);
       }
 
       try {
@@ -1549,26 +2266,71 @@
       }
 
       if (!getTopVisibleRasterKey()) removeValueLabel();
+      renderLegend();
+    }
+
+    function ringContainsLonLat(ring, lon, lat){
+      if (!Array.isArray(ring) || ring.length < 3) return false;
+      let inside = false;
+      for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+        const xi = ring[i][0], yi = ring[i][1];
+        const xj = ring[j][0], yj = ring[j][1];
+        const intersects = ((yi > lat) !== (yj > lat)) &&
+          (lon < ((xj - xi) * (lat - yi)) / ((yj - yi) || 1e-12) + xi);
+        if (intersects) inside = !inside;
+      }
+      return inside;
+    }
+
+    function polygonEntityContainsLonLat(entity, lon, lat){
+      const hierarchy = entity?.polygon?.hierarchy?.getValue?.(Cesium.JulianDate.now());
+      if (!hierarchy?.positions?.length) return false;
+
+      const outerRing = hierarchy.positions.map((pos) => {
+        const carto = Cesium.Cartographic.fromCartesian(pos);
+        return [Cesium.Math.toDegrees(carto.longitude), Cesium.Math.toDegrees(carto.latitude)];
+      });
+
+      if (!ringContainsLonLat(outerRing, lon, lat)) return false;
+
+      const holes = hierarchy.holes || [];
+      for (const hole of holes) {
+        const holePositions = hole?.positions || hole?.getValue?.(Cesium.JulianDate.now())?.positions || [];
+        if (!holePositions.length) continue;
+        const holeRing = holePositions.map((pos) => {
+          const carto = Cesium.Cartographic.fromCartesian(pos);
+          return [Cesium.Math.toDegrees(carto.longitude), Cesium.Math.toDegrees(carto.latitude)];
+        });
+        if (ringContainsLonLat(holeRing, lon, lat)) return false;
+      }
+
+      return true;
+    }
+
+    function detectCityAtLonLat(lon, lat){
+      for (const [cityName, ds] of loadedByName) {
+        for (const entity of ds.entities.values) {
+          if (polygonEntityContainsLonLat(entity, lon, lat)) return cityName;
+        }
+      }
+      return null;
+    }
+
+    function syncPillSelection(containerId, dataKey, value){
+      const el = document.getElementById(containerId);
+      if (!el) return;
+      el.querySelectorAll('button').forEach((btn) => {
+        const isActive = btn.dataset[dataKey] === value;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      });
     }
 
     function setupRasterClickValueHandler(){
       if (rasterClickHandler || !viewer) return;
 
       rasterClickHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
-      rasterClickHandler.setInputAction((movement) => {
-        const topKey = getTopVisibleRasterKey();
-        if (!topKey) {
-          removeValueLabel();
-          return;
-        }
-
-        const state = rasterStates[topKey];
-        const spec = RASTER_SPECS[topKey];
-        if (!state?.currentCache) {
-          removeValueLabel();
-          return;
-        }
-
+      rasterClickHandler.setInputAction(async (movement) => {
         const ray = viewer.camera.getPickRay(movement.position);
         if (!ray) {
           removeValueLabel();
@@ -1585,19 +2347,49 @@
         const lon = Cesium.Math.toDegrees(cartographic.longitude);
         const lat = Cesium.Math.toDegrees(cartographic.latitude);
 
-        const px = lonLatToRasterPixel(state.currentCache, lon, lat);
-        if (!px) {
+        if (selectedCity === "ALL") {
+          const clickedCity = detectCityAtLonLat(lon, lat);
+          if (clickedCity && clickedCity !== selectedCity) {
+            selectedCity = clickedCity;
+            syncPillSelection("cityPills", "city", clickedCity);
+            removeValueLabel();
+            await handleSelectionChange();
+            return;
+          }
+        }
+
+        const topKey = getTopVisibleRasterKey();
+        if (!topKey) {
           removeValueLabel();
           return;
         }
 
-        const value = state.currentCache.values[px.index];
-        if (isNoData(value, state.currentCache.nodataValue)) {
+        const state = rasterStates[topKey];
+        const spec = RASTER_SPECS[topKey];
+        const caches = getRasterCaches(state);
+        if (!caches.length) {
           removeValueLabel();
           return;
         }
 
-        showValueLabel(lon, lat, value, spec?.unit || "");
+        let px = null;
+        let value = null;
+        for (const cache of caches) {
+          const candidatePx = lonLatToRasterPixel(cache, lon, lat);
+          if (!candidatePx) continue;
+          const candidateValue = cache.values[candidatePx.index];
+          if (isNoData(candidateValue, cache.nodataValue)) continue;
+          px = candidatePx;
+          value = candidateValue;
+          break;
+        }
+        if (!px || !Number.isFinite(value)) {
+          removeValueLabel();
+          return;
+        }
+
+        const formatted = formatRasterValue(spec, value);
+        showValueLabel(lon, lat, formatted.primary, formatted.secondary);
         console.log(`[Raster click] ${topKey}:`, value, "pixel:", px.x, px.y);
       }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
     }
@@ -1743,6 +2535,8 @@
       const now = Cesium.JulianDate.now();
 
       for (const e of ds.entities.values) {
+        e.cityName = name;
+
         if (e.polygon) {
           e.polygon.material = Cesium.Color.TRANSPARENT;
           e.polygon.outline = false;
@@ -1809,6 +2603,84 @@
     }
     function setLayerState(state){
       localStorage.setItem("layerState", JSON.stringify(state));
+    }
+
+    const DEFAULT_RASTER_OPACITY = 0.7;
+    let rasterOpacityRuntimeState = Object.create(null);
+
+    function getRasterOpacityState(){
+      return rasterOpacityRuntimeState;
+    }
+
+    function setRasterOpacityState(state){
+      rasterOpacityRuntimeState = { ...state };
+    }
+
+    function clampRasterOpacity(value){
+      const num = Number(value);
+      if (!Number.isFinite(num)) return DEFAULT_RASTER_OPACITY;
+      return Math.max(0, Math.min(1, num));
+    }
+
+    function getRasterOpacity(key){
+      const state = getRasterOpacityState();
+      return clampRasterOpacity(state[key] ?? DEFAULT_RASTER_OPACITY);
+    }
+
+    function setRasterOpacity(key, value){
+      const opacity = clampRasterOpacity(value);
+      const state = getRasterOpacityState();
+      state[key] = opacity;
+      setRasterOpacityState(state);
+      return opacity;
+    }
+
+    function applyRasterOpacity(key, value){
+      const opacity = clampRasterOpacity(value);
+      const rs = rasterStates[key];
+      for (const layer of getRasterLayers(rs)) {
+        layer.alpha = opacity;
+      }
+      const control = document.querySelector(`.opacityControl[data-opacity-control="${key}"]`);
+      if (control) {
+        const range = control.querySelector('.opacityRange');
+        const valueEl = control.querySelector('.opacityValue');
+        if (range && Number(range.value) !== Math.round(opacity * 100)) {
+          range.value = String(Math.round(opacity * 100));
+        }
+        if (valueEl) valueEl.textContent = `${Math.round(opacity * 100)}%`;
+      }
+    }
+
+    function updateOpacityControlVisibility(key, isOn){
+      const control = document.querySelector(`.opacityControl[data-opacity-control="${key}"]`);
+      if (control) control.classList.toggle('open', !!isOn);
+    }
+
+    function createOpacityControls(){
+      for (const key of RASTER_KEYS) {
+        const row = document.querySelector(`.layerRow[data-toggle-row="${key}"]`);
+        if (!row || row.nextElementSibling?.matches?.(`.opacityControl[data-opacity-control="${key}"]`)) continue;
+
+        const control = document.createElement('div');
+        control.className = 'opacityControl';
+        control.dataset.opacityControl = key;
+        control.innerHTML = `
+          <span class="opacityLabel">Opacity</span>
+          <input class="opacityRange" type="range" min="0" max="100" step="1" value="70" aria-label="${key} opacity" />
+          <span class="opacityValue">70%</span>`;
+
+        control.addEventListener('click', (e) => e.stopPropagation());
+        const range = control.querySelector('.opacityRange');
+        range.addEventListener('input', (e) => {
+          const opacity = setRasterOpacity(key, Number(e.target.value) / 100);
+          applyRasterOpacity(key, opacity);
+        });
+
+        row.insertAdjacentElement('afterend', control);
+        applyRasterOpacity(key, getRasterOpacity(key));
+        updateOpacityControlVisibility(key, getLayerEnabled(key));
+      }
     }
 
     function registerLayer(key, cesiumObj){
@@ -1998,7 +2870,7 @@
         subtitle: "Standardized urban/rural classes based on built form and land cover",
         what:
           "LCZs classify areas into types (e.g., compact high-rise, open low-rise, dense trees, water) using surface cover and urban structure. They enable more consistent comparisons between cities and neighborhoods.",
-        units: "Categorical classes (LCZ 1–17, plus water class).",
+        units: "Categorical classes (17 LCZ classes shown here as 1–17; official land-cover aliases A–G are retained in the legend).",
         interpret: [
           "Built LCZ classes often show higher daytime LST than natural classes, but patterns vary by season and moisture.",
           "Use LCZ to define ‘urban’ and ‘rural’ reference areas for SUHI calculations.",
@@ -2010,7 +2882,8 @@
           "LCZ describes typical structure/cover, not every micro-site condition."
         ],
         refs: [
-          "Stewart & Oke (2012) – LCZ concept and definitions."
+          "Stewart & Oke (2012) – LCZ concept and definitions.",
+          "Demuzere et al. (2022) – Global LCZ dataset and class representation."
         ]
       },
 
@@ -2251,8 +3124,11 @@
         active: "active",
         selected: "Selected",
         layers: "Layers",
-        kpis_title: "KPIs (placeholder)",
-        kpis_empty: "Charts / stats will appear here",
+        legend_title: "LCZ Classes",
+        legend_waiting: "Turn on LCZ to view the class legend here.",
+        legend_palette_note: "LCZ palette based on Demuzere et al. (2022). Built classes use the official warm urban palette, vegetation uses greens, bare surfaces use black/sand, and water uses blue.",
+        legend_group_built: "Built types (1–10)",
+        legend_group_landcover: "Land-cover types (11–17)",
         heat_stressors: "Heat Stressors",
         env_drivers: "Environmental Drivers",
         morphometrics: "Urban Morphometrics",
@@ -2261,6 +3137,7 @@
         layer_builtup: "Built-up",
         layer_water: "Water Proximity",
         layer_albedo: "Surface Albedo",
+        layer_lcz: "Local Climate Zones (LCZ)",
         layer_buildings3d: "3D Buildings",
         overview_btn: "Overview",
         overview_title: "Dashboard overview",
@@ -2305,8 +3182,11 @@
         active: "aktiv",
         selected: "Auswahl",
         layers: "Ebenen",
-        kpis_title: "KPIs (Platzhalter)",
-        kpis_empty: "Diagramme / Kennzahlen erscheinen hier",
+        legend_title: "LCZ-Klassen",
+        legend_waiting: "Schalte LCZ ein, damit die Klassenlegende hier erscheint.",
+        legend_palette_note: "LCZ-Farbpalette nach Demuzere et al. (2022). Gebaute Klassen nutzen die offizielle warme Stadtpalette, Vegetation Grüntöne, offene/bare Flächen Schwarz/Sand und Wasser Blau.",
+        legend_group_built: "Bebaute Typen (1–10)",
+        legend_group_landcover: "Landbedeckungstypen (11–17)",
         heat_stressors: "Hitzetreiber",
         env_drivers: "Umweltfaktoren",
         morphometrics: "Stadtmorphometrie",
@@ -2315,6 +3195,7 @@
         layer_builtup: "Bebauung",
         layer_water: "Wassernähe",
         layer_albedo: "Albedo",
+        layer_lcz: "Lokale Klimazonen (LCZ)",
         layer_buildings3d: "3D-Gebäude",
         overview_btn: "Überblick",
         overview_title: "Dashboard-Überblick",
@@ -2417,13 +3298,11 @@
       if (dot) dot.setAttribute("title", tr("active"));
 
       const cts = document.querySelectorAll("#leftPanel .card .ct");
-      if (cts && cts.length >= 3) {
+      if (cts && cts.length >= 2) {
         cts[0].textContent = tr("selected");
         cts[1].textContent = tr("layers");
-        cts[2].textContent = tr("kpis_title");
       }
-      const empty = document.querySelector("#leftPanel .empty");
-      if (empty) empty.textContent = tr("kpis_empty");
+      renderLegend();
 
       const secTitles = document.querySelectorAll(".layerSectionTitle");
       if (secTitles && secTitles.length >= 3) {
@@ -2441,6 +3320,7 @@
       setLayerName("ndbi", "layer_builtup");
       setLayerName("ndwi", "layer_water");
       setLayerName("albedo", "layer_albedo");
+      setLayerName("lcz", "layer_lcz");
       setLayerName("buildings3d", "layer_buildings3d");
 
       const overviewBtn = document.getElementById("overviewBtn");
@@ -2604,6 +3484,81 @@
       }
     });
 
+    function rgbToCss(rgb){
+      return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+    }
+
+    function getLegendLayerLabel(key){
+      return document.querySelector(`.layerRow[data-toggle-row="${key}"] .layerName`)?.textContent?.trim() || (RASTER_SPECS[key]?.title || "Legend");
+    }
+
+    function renderContinuousLegend(key){
+      const spec = RASTER_SPECS[key];
+      const ticks = getRasterLegendTicks(spec, selectedYear);
+      const tickHtml = ticks.map((tick) => `<span class="legendTick">${tick}</span>`).join("");
+      return `
+        <div class="legendScaleCard">
+          <div class="legendGradientBar" style="background:${buildLegendGradientCss(key, selectedYear)}"></div>
+          <div class="legendTickRow">${tickHtml}</div>
+
+        </div>`;
+    }
+
+    function renderLczLegend(){
+      const buildItems = LCZ_LEGEND_ORDER.filter((id) => id <= 10).map((id) => {
+        const cls = LCZ_CLASSES[id];
+        return `
+          <div class="legendItem">
+            <span class="legendSwatch" style="background:${rgbToCss(cls.color)}"></span>
+            <span class="legendClassCode">${cls.code}</span>
+            <span class="legendClassLabel">${cls.label}</span>
+          </div>`;
+      }).join("");
+
+      const landCoverItems = LCZ_LEGEND_ORDER.filter((id) => id >= 11).map((id) => {
+        const cls = LCZ_CLASSES[id];
+        return `
+          <div class="legendItem">
+            <span class="legendSwatch" style="background:${rgbToCss(cls.color)}"></span>
+            <span class="legendClassCode">${cls.code}</span>
+            <span class="legendClassLabel">${cls.label} <span class="legendClassAlias">(${cls.alias})</span></span>
+          </div>`;
+      }).join("");
+
+      return `
+        <div class="legendGroup">
+          <div class="legendGroupTitle">${tr("legend_group_built")}</div>
+          <div class="legendList">${buildItems}</div>
+        </div>
+        <div class="legendGroup">
+          <div class="legendGroupTitle">${tr("legend_group_landcover")}</div>
+          <div class="legendList">${landCoverItems}</div>
+        </div>`;
+    }
+
+    function renderLegend(){
+      const panel = document.getElementById("mapLegendPanel");
+      const card = document.getElementById("mapLegendCard");
+      const titleEl = document.getElementById("mapLegendTitle");
+      if (!panel || !card || !titleEl) return;
+
+      const topKey = getTopVisibleRasterKey();
+      if (!topKey) {
+        card.classList.remove("open");
+        panel.innerHTML = "";
+        titleEl.textContent = "Legend";
+        return;
+      }
+
+      titleEl.textContent = getLegendLayerLabel(topKey);
+      if (topKey === "lcz") {
+        panel.innerHTML = renderLczLegend();
+      } else {
+        panel.innerHTML = renderContinuousLegend(topKey);
+      }
+      card.classList.add("open");
+    }
+
     function wireInfoButtons() {
       document.querySelectorAll(".infoBtn").forEach((btn) => {
         btn.addEventListener("click", (e) => {
@@ -2612,6 +3567,36 @@
           openInfoModal(btn.dataset.info, btn);
         });
       });
+    }
+
+
+    function buildImageryProviderViewModels(){
+      const models = Cesium.createDefaultImageryProviderViewModels();
+      const blockedNames = new Set(["Sentinel-2", "Blue Marble", "Earth at night", "Earth at Night"]);
+      return models.filter((m) => m && !blockedNames.has(m.name));
+    }
+
+    function getDefaultOsmImageryViewModel(models){
+      if (!Array.isArray(models)) return undefined;
+      return models.find((m) => /open\s*street\s*map/i.test(m?.name || ""))
+          || models.find((m) => /open\s*street\s*map/i.test(m?.tooltip || ""))
+          || models[0];
+    }
+
+    function resetAllDashboardLayersOff(){
+      const offState = {
+        lst: false,
+        suhi: false,
+        hotspots: false,
+        ndvi: false,
+        ndbi: false,
+        ndwi: false,
+        albedo: false,
+        lcz: false,
+        buildings3d: false
+      };
+      setLayerState(offState);
+      return offState;
     }
 
     function wireLayerSwitches(){
@@ -2634,6 +3619,8 @@
         cb.checked = !!state[key];
 
         if (RASTER_KEYS.includes(key)) {
+          updateOpacityControlVisibility(key, cb.checked);
+          applyRasterOpacity(key, getRasterOpacity(key));
           if (cb.checked) markRasterPriority(key);
         } else if (key === "buildings3d") {
           buildingsEnabled = cb.checked;
@@ -2651,19 +3638,23 @@
           if (key === "buildings3d") {
             buildingsEnabled = on;
             void updateBuildingsVisibility().catch(console.error);
+            renderLegend();
             return;
           }
 
           if (RASTER_KEYS.includes(key)) {
+            updateOpacityControlVisibility(key, on);
             if (on) {
+              applyRasterOpacity(key, getRasterOpacity(key));
               markRasterPriority(key);
               await refreshRasterLayers();
             } else {
               const rs = rasterStates[key];
-              if (rs?.imageryLayer) rs.imageryLayer.show = false;
+              hideRasterStateLayers(rs);
               if (getTopVisibleRasterKey() !== key) removeValueLabel();
               if (!getTopVisibleRasterKey()) removeValueLabel();
             }
+            renderLegend();
             return;
           }
 
@@ -2683,6 +3674,9 @@
         requestWaterMask: true
       });
 
+      const imageryProviderViewModels = buildImageryProviderViewModels();
+      const selectedImageryProviderViewModel = getDefaultOsmImageryViewModel(imageryProviderViewModels);
+
       viewer = new Cesium.Viewer("cesiumContainer", {
         timeline: false,
         animation: false,
@@ -2690,6 +3684,8 @@
         homeButton: true,
         sceneModePicker: true,
         baseLayerPicker: true,
+        imageryProviderViewModels,
+        selectedImageryProviderViewModel,
         navigationHelpButton: true,
         fullscreenButton: true,
         vrButton: false,
@@ -2703,6 +3699,13 @@
       viewer.scene.globe.depthTestAgainstTerrain = true;
       viewer.scene.globe.enableLighting = false;
       viewer.scene.postRender.addEventListener(updateValueOverlayScreenPosition);
+
+      // Keep the dashboard in controlled top-down navigation:
+      // disable Cesium's default double-click camera action so the map
+      // does not tilt into an oblique 3D view after a double click.
+      viewer.cesiumWidget?.screenSpaceEventHandler?.removeInputAction(
+        Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK
+      );
 
       viewer.homeButton.viewModel.command.beforeExecute.addEventListener(function(e){
         e.cancel = true;
@@ -2734,7 +3737,10 @@
       }
 
       wireInfoButtons();
+      resetAllDashboardLayersOff();
+      createOpacityControls();
       wireLayerSwitches();
+      renderLegend();
 
       await handleSelectionChange();
       setupRasterClickValueHandler();
