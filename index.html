@@ -842,17 +842,30 @@
 
     .subLayerGroup{
       display:none;
-      margin: 0 8px 8px 24px;
-      padding: 6px;
+      margin: 2px 8px 8px 34px;
+      padding: 8px 8px 8px 12px;
       border-radius: 12px;
       border: 1px solid var(--stroke);
-      background: rgba(255,255,255,0.03);
+      border-left: 2px solid var(--strokeSoft);
+      background: rgba(255,255,255,0.025);
       box-shadow: 0 0 0 1px rgba(255,255,255,0.03) inset;
+      position: relative;
     }
     html[data-theme="light"] .subLayerGroup{
       background: rgba(12,18,30,0.03);
     }
     .subLayerGroup.open{ display:block; }
+
+    .subLayerHint{
+      margin: 0 0 6px;
+      padding-left: 2px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.55px;
+      text-transform: uppercase;
+      color: var(--muted);
+      opacity: 0.82;
+    }
 
     .subLayerRow{
       display:flex;
@@ -866,6 +879,15 @@
     }
     .subLayerRow:hover{ background: rgba(255,255,255,0.04); }
     html[data-theme="light"] .subLayerRow:hover{ background: rgba(12,18,30,0.04); }
+    .subLayerRow[data-visual-only="true"]{
+      cursor:default;
+    }
+    .subLayerRow[data-visual-only="true"] .switch{
+      transform: scale(0.88);
+      transform-origin: right center;
+      pointer-events:none;
+      opacity: 0.82;
+    }
 
     .subLayerLeft{
       display:flex;
@@ -1386,6 +1408,32 @@
                   <span class="slider"></span>
                 </label>
               </div>
+
+              <div class="subLayerGroup" data-parent-layer="hotspots">
+                <div class="subLayerHint">Sub-selection</div>
+
+                <div class="subLayerRow" data-toggle-row="hotspots_hot">
+                  <div class="subLayerLeft">
+                    <span class="subLayerSwatch" style="background: rgba(255, 82, 82, 0.88);"></span>
+                    <span class="subLayerName">Hotspots</span>
+                  </div>
+                  <label class="switch" aria-label="Toggle hotspot sub-selection">
+                    <input class="layerSwitch" type="checkbox" data-layer="hotspots_hot" checked />
+                    <span class="slider"></span>
+                  </label>
+                </div>
+
+                <div class="subLayerRow" data-toggle-row="hotspots_cold">
+                  <div class="subLayerLeft">
+                    <span class="subLayerSwatch" style="background: rgba(58, 160, 255, 0.88);"></span>
+                    <span class="subLayerName">Coldspots</span>
+                  </div>
+                  <label class="switch" aria-label="Toggle coldspot sub-selection">
+                    <input class="layerSwitch" type="checkbox" data-layer="hotspots_cold" checked />
+                    <span class="slider"></span>
+                  </label>
+                </div>
+              </div>
             </div>
 
             <div class="layerDivider"></div>
@@ -1573,16 +1621,23 @@
 
     const HOTSPOT_BASE_PATH = "data/Vector/Hotspots";
     const HOTSPOT_FILE_SUFFIX = "70m_gistar_urbanOnly_hotcold_dissolved_4326.geojson";
+    const HOTSPOT_DEFAULT_OPACITY = 0.7;
     const HOTSPOT_STYLES = {
       hotspot: {
-        fill: Cesium.Color.fromCssColorString("#ff5252").withAlpha(0.42),
-        outline: Cesium.Color.fromCssColorString("#b71c1c").withAlpha(0.96),
-        line: Cesium.Color.fromCssColorString("#c62828").withAlpha(0.96)
+        fill: "#ff5252",
+        fillAlpha: 0.60,
+        outline: "#b71c1c",
+        outlineAlpha: 0.96,
+        line: "#c62828",
+        lineAlpha: 0.96
       },
       coldspot: {
-        fill: Cesium.Color.fromCssColorString("#3aa0ff").withAlpha(0.38),
-        outline: Cesium.Color.fromCssColorString("#0d47a1").withAlpha(0.96),
-        line: Cesium.Color.fromCssColorString("#1565c0").withAlpha(0.96)
+        fill: "#3aa0ff",
+        fillAlpha: 0.54,
+        outline: "#0d47a1",
+        outlineAlpha: 0.96,
+        line: "#1565c0",
+        lineAlpha: 0.96
       }
     };
 
@@ -1599,6 +1654,7 @@
       layersByUrl: new Map(),
       activeUrls: []
     };
+    let hotspotOpacityRuntimeValue = HOTSPOT_DEFAULT_OPACITY;
 
     const RASTER_KEYS = ["lst", "suhi", "ndvi", "ndbi", "ndwi", "albedo", "lcz"];
     const AVAILABLE_RASTER_KEYS = ["lst", "suhi", "ndvi", "ndbi", "ndwi", "lcz"];
@@ -2349,6 +2405,17 @@
       return getLayerEnabled("hotspots");
     }
 
+    function getHotspotChildEnabled(type){
+      const state = getLayerState();
+      if (type === "hotspot") {
+        return Object.prototype.hasOwnProperty.call(state, "hotspots_hot") ? !!state.hotspots_hot : true;
+      }
+      if (type === "coldspot") {
+        return Object.prototype.hasOwnProperty.call(state, "hotspots_cold") ? !!state.hotspots_cold : true;
+      }
+      return true;
+    }
+
     function getDesiredHotspotCities(){
       if (selectedCity === "ALL") return ASSETS.map((asset) => asset.name);
       return [selectedCity];
@@ -2427,6 +2494,26 @@
       );
     }
 
+    function restyleHotspotEntity(entity){
+      const spotType = entity.__spotType || "hotspot";
+      const style = getHotspotStyle(spotType);
+
+      if (entity.polygon) {
+        entity.polygon.material = style.fill;
+        entity.polygon.outline = true;
+        entity.polygon.outlineColor = style.outline;
+        entity.polygon.outlineWidth = 2;
+        entity.polygon.classificationType = Cesium.ClassificationType.BOTH;
+        entity.polygon.zIndex = spotType === "hotspot" ? 24 : 23;
+      }
+
+      if (entity.polyline) {
+        entity.polyline.material = style.line;
+        entity.polyline.width = 2.5;
+        entity.polyline.clampToGround = true;
+      }
+    }
+
     function hotspotDescriptionHtml(label, city, year){
       return `
         <div style="font-family:system-ui,Segoe UI,Roboto,Arial;font-size:13px;line-height:1.45;">
@@ -2437,7 +2524,6 @@
     }
 
     function createHotspotEntity(hierarchy, spotType, city, year, props, partIndex){
-      const style = HOTSPOT_STYLES[spotType] || HOTSPOT_STYLES.hotspot;
       const label = spotType === "coldspot" ? "Coldspot" : "Hotspot";
 
       const entity = viewer.entities.add({
@@ -2454,12 +2540,7 @@
         },
         polygon: {
           hierarchy,
-          material: style.fill,
-          outline: true,
-          outlineColor: style.outline,
-          outlineWidth: 2,
-          classificationType: Cesium.ClassificationType.BOTH,
-          zIndex: spotType === "hotspot" ? 24 : 23
+          outline: true
         }
       });
 
@@ -2467,6 +2548,7 @@
       entity.__cityName = city;
       entity.__yearValue = year;
       entity.__partIndex = partIndex;
+      restyleHotspotEntity(entity);
 
       return entity;
     }
@@ -2526,11 +2608,15 @@
     function applyHotspotVisibility(){
       const parentOn = getHotspotParentEnabled();
       const activeUrlSet = new Set(hotspotRuntime.activeUrls || []);
+      const hotOn = getHotspotChildEnabled("hotspot");
+      const coldOn = getHotspotChildEnabled("coldspot");
 
       for (const [url, record] of hotspotRuntime.layersByUrl) {
-        const visible = parentOn && activeUrlSet.has(url);
+        const layerVisible = parentOn && activeUrlSet.has(url);
+
         for (const entity of record.entities || []) {
-          entity.show = visible;
+          const type = entity.__spotType || "hotspot";
+          entity.show = layerVisible && ((type === "hotspot" && hotOn) || (type === "coldspot" && coldOn));
         }
       }
 
@@ -2880,6 +2966,8 @@
       lst: null,
       suhi: null,
       hotspots: null,
+      hotspots_hot: null,
+      hotspots_cold: null,
       ndvi: null,
       ndbi: null,
       ndwi: null,
@@ -2932,6 +3020,40 @@
       return opacity;
     }
 
+    function clampHotspotOpacity(value){
+      const num = Number(value);
+      if (!Number.isFinite(num)) return HOTSPOT_DEFAULT_OPACITY;
+      return Math.max(0, Math.min(1, num));
+    }
+
+    function getHotspotOpacity(){
+      return clampHotspotOpacity(hotspotOpacityRuntimeValue);
+    }
+
+    function setHotspotOpacity(value){
+      hotspotOpacityRuntimeValue = clampHotspotOpacity(value);
+      return hotspotOpacityRuntimeValue;
+    }
+
+    function hotspotColorWithOpacity(css, alpha){
+      return Cesium.Color.fromCssColorString(css).withAlpha(Math.max(0, Math.min(1, alpha)));
+    }
+
+    function getHotspotStyle(spotType){
+      const base = HOTSPOT_STYLES[spotType] || HOTSPOT_STYLES.hotspot;
+      const opacity = getHotspotOpacity();
+      return {
+        fill: hotspotColorWithOpacity(base.fill, base.fillAlpha * opacity),
+        outline: hotspotColorWithOpacity(base.outline, Math.min(1, Math.max(base.outlineAlpha * opacity, 0.55))),
+        line: hotspotColorWithOpacity(base.line, Math.min(1, Math.max(base.lineAlpha * opacity, 0.60)))
+      };
+    }
+
+    function updateHotspotOpacityControlVisibility(isOn){
+      const control = document.querySelector('.opacityControl[data-opacity-control="hotspots"]');
+      if (control) control.classList.toggle('open', !!isOn);
+    }
+
     function applyRasterOpacity(key, value){
       const opacity = clampRasterOpacity(value);
       const rs = rasterStates[key];
@@ -2980,6 +3102,54 @@
       }
     }
 
+    function applyHotspotOpacity(value){
+      const opacity = setHotspotOpacity(value);
+      for (const record of hotspotRuntime.layersByUrl.values()) {
+        for (const entity of record.entities || []) {
+          restyleHotspotEntity(entity);
+        }
+      }
+      const control = document.querySelector('.opacityControl[data-opacity-control="hotspots"]');
+      if (control) {
+        const range = control.querySelector('.opacityRange');
+        const valueEl = control.querySelector('.opacityValue');
+        const pct = Math.round(opacity * 100);
+        if (range && Number(range.value) !== pct) range.value = String(pct);
+        if (valueEl) valueEl.textContent = `${pct}%`;
+      }
+      renderLegend();
+      return opacity;
+    }
+
+    function createHotspotOpacityControl(){
+      const row = document.querySelector('.layerRow[data-toggle-row="hotspots"]');
+      if (!row || document.querySelector('.opacityControl[data-opacity-control="hotspots"]')) return;
+
+      const control = document.createElement('div');
+      control.className = 'opacityControl';
+      control.dataset.opacityControl = 'hotspots';
+      control.innerHTML = `
+        <span class="opacityLabel">Opacity</span>
+        <input class="opacityRange" type="range" min="0" max="100" step="1" value="70" aria-label="Hotspots opacity" />
+        <span class="opacityValue">70%</span>`;
+
+      control.addEventListener('click', (e) => e.stopPropagation());
+      const range = control.querySelector('.opacityRange');
+      range.addEventListener('input', (e) => {
+        applyHotspotOpacity(Number(e.target.value) / 100);
+      });
+
+      const group = document.querySelector('.subLayerGroup[data-parent-layer="hotspots"]');
+      if (group) {
+        group.insertAdjacentElement('afterend', control);
+      } else {
+        row.insertAdjacentElement('afterend', control);
+      }
+
+      applyHotspotOpacity(getHotspotOpacity());
+      updateHotspotOpacityControlVisibility(getLayerEnabled('hotspots'));
+    }
+
     function registerLayer(key, cesiumObj){
       LAYER_REGISTRY[key] = cesiumObj;
       const state = getLayerState();
@@ -2987,7 +3157,9 @@
     }
 
     function updateHotspotSubLayerGroup(){
-      // Hotspots now use a single main toggle. No nested sub-layer UI is shown.
+      const group = document.querySelector('.subLayerGroup[data-parent-layer="hotspots"]');
+      if (!group) return;
+      group.classList.toggle('open', getHotspotParentEnabled());
     }
 
     const LAYER_INFO = {
@@ -3066,7 +3238,7 @@
           "This layer shows dissolved Gi* cluster polygons from the selected city and year. Red polygons represent hotspots (clusters of relatively high surface heat), while blue polygons represent coldspots (clusters of relatively cool surface conditions).",
         units: "Categorical hotspot/coldspot classes derived from the hotspot analysis output.",
         interpret: [
-          "Turn the Hotspots switch on to load the matching city-year GeoJSON file. Hotspot and coldspot polygons are shown together to keep the map behavior simple and reliable.",
+          "Turn the main Hotspots switch on to load the matching city-year GeoJSON file, then use the nested Hotspots and Coldspots switches to show each class separately.",
           "Hotspots can indicate persistent heat-risk locations such as dense built-up areas with low vegetation, while coldspots often coincide with greener, wetter, or less urbanized surfaces.",
           "Because these are spatial clusters, they represent local concentration patterns rather than just isolated high or low pixels."
         ],
@@ -3280,7 +3452,7 @@
           "Dieser Layer zeigt aufgelöste Gi*-Clusterpolygone für die gewählte Stadt und das gewählte Jahr. Rote Polygone markieren Hotspots (Cluster relativ hoher Oberflächenwärme), blaue Polygone markieren Coldspots (Cluster relativ kühler Oberflächenbedingungen).",
         units: "Kategoriale Hotspot-/Coldspot-Klassen aus der Hotspot-Analyse.",
         interpret: [
-          "Schalte den Layer Hotspots ein, um die passende GeoJSON-Datei für Stadt und Jahr zu laden. Hotspot- und Coldspot-Polygone werden gemeinsam angezeigt, damit die Darstellung stabil und einfach bleibt.",
+          "Schalte zuerst den Hauptschalter Hotspots ein; danach kannst du mit den Unter-Schaltern Hotspots und Coldspots beide Klassen getrennt ein- oder ausblenden.",
           "Hotspots weisen oft auf dichte, stärker versiegelte und vegetationsarme Bereiche hin; Coldspots fallen häufig mit grüneren, feuchteren oder weniger urbanen Flächen zusammen.",
           "Da es sich um räumliche Cluster handelt, zeigen die Polygone lokale Konzentrationsmuster und nicht nur einzelne extreme Pixel."
         ],
@@ -3436,6 +3608,7 @@
         layer_hotspots: "Hotspots",
         layer_hotspots_hot: "Hotspots",
         layer_hotspots_cold: "Coldspots",
+        hotspot_subselection_hint: "Sub-selection",
         layer_greenness: "Greenness",
         layer_builtup: "Built-up",
         layer_water: "Water Proximity",
@@ -3496,6 +3669,7 @@
         layer_hotspots: "Hotspots",
         layer_hotspots_hot: "Hotspots",
         layer_hotspots_cold: "Coldspots",
+        hotspot_subselection_hint: "Unterauswahl",
         layer_greenness: "Vegetation",
         layer_builtup: "Bebauung",
         layer_water: "Wassernähe",
@@ -3621,6 +3795,12 @@
         if (el) el.textContent = tr(labelKey);
       };
       setLayerName("hotspots", "layer_hotspots");
+      const hotspotHintEl = document.querySelector('.subLayerHint');
+      const hotspotHotEl = document.querySelector('.subLayerRow[data-toggle-row="hotspots_hot"] .subLayerName');
+      const hotspotColdEl = document.querySelector('.subLayerRow[data-toggle-row="hotspots_cold"] .subLayerName');
+      if (hotspotHintEl) hotspotHintEl.textContent = tr("hotspot_subselection_hint");
+      if (hotspotHotEl) hotspotHotEl.textContent = tr("layer_hotspots_hot");
+      if (hotspotColdEl) hotspotColdEl.textContent = tr("layer_hotspots_cold");
       setLayerName("ndvi", "layer_greenness");
       setLayerName("ndbi", "layer_builtup");
       setLayerName("ndwi", "layer_water");
@@ -3842,21 +4022,30 @@
     }
 
     function renderHotspotLegend(){
+      const items = [];
+      if (getHotspotChildEnabled("hotspot")) {
+        const hotAlpha = Math.max(0.28, Math.min(0.92, HOTSPOT_STYLES.hotspot.fillAlpha * getHotspotOpacity()));
+        items.push(`
+          <div class="legendItem">
+            <span class="legendSwatch" style="background: rgba(255, 82, 82, ${hotAlpha.toFixed(2)});"></span>
+            <span class="legendClassCode">Hot</span>
+            <span class="legendClassLabel">Hotspot clusters</span>
+          </div>`);
+      }
+      if (getHotspotChildEnabled("coldspot")) {
+        const coldAlpha = Math.max(0.28, Math.min(0.92, HOTSPOT_STYLES.coldspot.fillAlpha * getHotspotOpacity()));
+        items.push(`
+          <div class="legendItem">
+            <span class="legendSwatch" style="background: rgba(58, 160, 255, ${coldAlpha.toFixed(2)});"></span>
+            <span class="legendClassCode">Cold</span>
+            <span class="legendClassLabel">Coldspot clusters</span>
+          </div>`);
+      }
+      if (!items.length) return "";
       return `
         <div class="legendGroup">
           <div class="legendGroupTitle">Hotspots</div>
-          <div class="legendList">
-            <div class="legendItem">
-              <span class="legendSwatch" style="background: rgba(255, 82, 82, 0.88);"></span>
-              <span class="legendClassCode">Hot</span>
-              <span class="legendClassLabel">Hotspot clusters</span>
-            </div>
-            <div class="legendItem">
-              <span class="legendSwatch" style="background: rgba(58, 160, 255, 0.88);"></span>
-              <span class="legendClassCode">Cold</span>
-              <span class="legendClassLabel">Coldspot clusters</span>
-            </div>
-          </div>
+          <div class="legendList">${items.join("")}</div>
         </div>`;
     }
 
@@ -3920,6 +4109,8 @@
         lst: false,
         suhi: false,
         hotspots: false,
+        hotspots_hot: true,
+        hotspots_cold: true,
         ndvi: false,
         ndbi: false,
         ndwi: false,
@@ -3939,7 +4130,7 @@
 
           const key = row.getAttribute("data-toggle-row");
           const cb = document.querySelector(`.layerSwitch[data-layer="${key}"]`);
-          if (!cb) return;
+          if (!cb || cb.disabled) return;
           cb.checked = !cb.checked;
           cb.dispatchEvent(new Event("change", { bubbles: true }));
         });
@@ -3948,6 +4139,7 @@
       document.querySelectorAll(".layerSwitch").forEach((cb) => {
         const key = cb.dataset.layer;
         const state = getLayerState();
+
         cb.checked = Object.prototype.hasOwnProperty.call(state, key) ? !!state[key] : false;
 
         if (RASTER_KEYS.includes(key)) {
@@ -3959,6 +4151,7 @@
           void updateBuildingsVisibility().catch(console.error);
         } else if (key === "hotspots") {
           updateHotspotSubLayerGroup();
+          updateHotspotOpacityControlVisibility(getLayerEnabled("hotspots"));
           applyHotspotVisibility();
         } else {
           setVisible(LAYER_REGISTRY[key], cb.checked);
@@ -3995,7 +4188,18 @@
 
           if (key === "hotspots") {
             updateHotspotSubLayerGroup();
+            updateHotspotOpacityControlVisibility(getLayerEnabled("hotspots"));
             await refreshHotspotLayers();
+            return;
+          }
+
+          if (key === "hotspots_hot") {
+            applyHotspotVisibility();
+            return;
+          }
+
+          if (key === "hotspots_cold") {
+            applyHotspotVisibility();
             return;
           }
 
@@ -4082,6 +4286,7 @@
       wireInfoButtons();
       resetAllDashboardLayersOff();
       createOpacityControls();
+      createHotspotOpacityControl();
       wireLayerSwitches();
       renderLegend();
 
