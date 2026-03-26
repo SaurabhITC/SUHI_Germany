@@ -842,30 +842,17 @@
 
     .subLayerGroup{
       display:none;
-      margin: 2px 8px 8px 34px;
-      padding: 8px 8px 8px 12px;
+      margin: 0 8px 8px 24px;
+      padding: 6px;
       border-radius: 12px;
       border: 1px solid var(--stroke);
-      border-left: 2px solid var(--strokeSoft);
-      background: rgba(255,255,255,0.025);
+      background: rgba(255,255,255,0.03);
       box-shadow: 0 0 0 1px rgba(255,255,255,0.03) inset;
-      position: relative;
     }
     html[data-theme="light"] .subLayerGroup{
       background: rgba(12,18,30,0.03);
     }
     .subLayerGroup.open{ display:block; }
-
-    .subLayerHint{
-      margin: 0 0 6px;
-      padding-left: 2px;
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: 0.55px;
-      text-transform: uppercase;
-      color: var(--muted);
-      opacity: 0.82;
-    }
 
     .subLayerRow{
       display:flex;
@@ -879,15 +866,6 @@
     }
     .subLayerRow:hover{ background: rgba(255,255,255,0.04); }
     html[data-theme="light"] .subLayerRow:hover{ background: rgba(12,18,30,0.04); }
-    .subLayerRow[data-visual-only="true"]{
-      cursor:default;
-    }
-    .subLayerRow[data-visual-only="true"] .switch{
-      transform: scale(0.88);
-      transform-origin: right center;
-      pointer-events:none;
-      opacity: 0.82;
-    }
 
     .subLayerLeft{
       display:flex;
@@ -915,6 +893,49 @@
       text-overflow:ellipsis;
       min-width:0;
     }
+
+    .markerChoiceGroup{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+
+    .markerChoiceBtn{
+      flex:1 1 calc(33.333% - 6px);
+      min-width:78px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:9px 10px;
+      border-radius:12px;
+      border:1px solid var(--stroke);
+      background:var(--btnBg);
+      color:var(--text);
+      font-size:12px;
+      font-weight:750;
+      letter-spacing:0.01em;
+      cursor:pointer;
+      user-select:none;
+      transition:background 140ms ease, border-color 140ms ease, transform 140ms ease, box-shadow 140ms ease;
+      box-shadow:0 0 0 1px rgba(255,255,255,0.03) inset;
+    }
+    .markerChoiceBtn:hover{
+      background:rgba(255,255,255,0.05);
+      border-color:var(--btnHoverBorder);
+    }
+    html[data-theme="light"] .markerChoiceBtn:hover{
+      background:rgba(12,18,30,0.04);
+    }
+    .markerChoiceBtn.active{
+      background:rgba(58,160,255,0.16);
+      border-color:rgba(58,160,255,0.55);
+      box-shadow:0 0 0 1px rgba(58,160,255,0.14) inset;
+    }
+    .markerChoiceBtn:focus-visible{
+      outline:2px solid var(--btnHoverBorder);
+      outline-offset:2px;
+    }
+
 
     .switch{ position:relative; width:44px; height:24px; flex:0 0 auto; }
     .switch input{ opacity:0; width:0; height:0; position:absolute; }
@@ -1353,17 +1374,18 @@
         </div>
 
         <div class="card">
-          <div class="ct">Selected</div>
+          <div class="ct" id="selectedCardTitle">Selected</div>
           <div id="selectedInfo" style="font-size:13px; font-weight:700;">All cities • 2024</div>
         </div>
 
+
         <div class="card" id="legendCard">
-          <div class="ct">LCZ Legend</div>
+          <div class="ct" id="legendCardTitle">LCZ Legend</div>
           <div id="legendPanel" class="legendPanel"></div>
         </div>
 
         <div class="card">
-          <div class="ct">Layers</div>
+          <div class="ct" id="layersCardTitle">Layers</div>
 
           <div class="layerBox" id="layerBox">
             <div class="layerSectionTitle">Heat Stressors</div>
@@ -1410,15 +1432,13 @@
               </div>
 
               <div class="subLayerGroup" data-parent-layer="hotspots">
-                <div class="subLayerHint">Sub-selection</div>
-
                 <div class="subLayerRow" data-toggle-row="hotspots_hot">
                   <div class="subLayerLeft">
                     <span class="subLayerSwatch" style="background: rgba(255, 82, 82, 0.88);"></span>
                     <span class="subLayerName">Hotspots</span>
                   </div>
-                  <label class="switch" aria-label="Toggle hotspot sub-selection">
-                    <input class="layerSwitch" type="checkbox" data-layer="hotspots_hot" checked />
+                  <label class="switch" aria-label="Toggle hotspot polygons">
+                    <input class="layerSwitch" type="checkbox" data-layer="hotspots_hot" />
                     <span class="slider"></span>
                   </label>
                 </div>
@@ -1428,8 +1448,8 @@
                     <span class="subLayerSwatch" style="background: rgba(58, 160, 255, 0.88);"></span>
                     <span class="subLayerName">Coldspots</span>
                   </div>
-                  <label class="switch" aria-label="Toggle coldspot sub-selection">
-                    <input class="layerSwitch" type="checkbox" data-layer="hotspots_cold" checked />
+                  <label class="switch" aria-label="Toggle coldspot polygons">
+                    <input class="layerSwitch" type="checkbox" data-layer="hotspots_cold" />
                     <span class="slider"></span>
                   </label>
                 </div>
@@ -1672,6 +1692,9 @@
     const rasterAssetCache = new Map();
     let rasterClickHandler = null;
     let valueOverlayCartesian = null;
+    const CLICK_MARKER_STYLES = ["crosshair"];
+    let currentClickMarkerStyle = "crosshair";
+    let valueMarkerEntity = null;
 
     const LCZ_CLASSES = {
       1:  { code: "1",  alias: "LCZ 1",  label: "Compact high-rise",    color: [140,   0,   0] },
@@ -2170,11 +2193,114 @@
       return canvas;
     }
 
+
+    function normalizeClickMarkerStyle(style){
+      return "crosshair";
+    }
+
+    function makeSvgDataUri(svg){
+      return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+    }
+
+    function buildClickMarkerSvg(style){
+      const markerStyle = normalizeClickMarkerStyle(style);
+
+      if (markerStyle === "pin") {
+        return `
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+            <path d="M32 4C21.23 4 12.5 12.73 12.5 23.5 12.5 38.3 32 60 32 60s19.5-21.7 19.5-36.5C51.5 12.73 42.77 4 32 4Z"
+                  fill="#FFD54F" stroke="#1F2937" stroke-width="4" stroke-linejoin="round"/>
+            <circle cx="32" cy="23.5" r="6.5" fill="#1F2937"/>
+          </svg>
+        `.trim();
+      }
+
+      if (markerStyle === "crosshair") {
+        return `
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+            <circle cx="32" cy="32" r="16" fill="#FFD54F" fill-opacity="0.28" stroke="#1F2937" stroke-width="4"/>
+            <path d="M32 8V20M32 44V56M8 32H20M44 32H56" stroke="#1F2937" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="32" cy="32" r="5" fill="#1F2937"/>
+          </svg>
+        `.trim();
+      }
+
+      return `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+          <circle cx="32" cy="32" r="18" fill="#FFD54F" fill-opacity="0.88" stroke="#1F2937" stroke-width="4"/>
+          <circle cx="32" cy="32" r="5" fill="#1F2937"/>
+        </svg>
+      `.trim();
+    }
+
+    function getClickMarkerBillboardOptions(style){
+      const markerStyle = normalizeClickMarkerStyle(style);
+      const isPin = markerStyle === "pin";
+      return {
+        image: makeSvgDataUri(buildClickMarkerSvg(markerStyle)),
+        width: isPin ? 28 : 26,
+        height: isPin ? 38 : 26,
+        verticalOrigin: isPin ? Cesium.VerticalOrigin.BOTTOM : Cesium.VerticalOrigin.CENTER,
+        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY
+      };
+    }
+
+    function ensureValueMarkerEntity(){
+      if (!viewer) return null;
+      if (!valueMarkerEntity) {
+        valueMarkerEntity = viewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(0, 0),
+          show: false,
+          billboard: new Cesium.BillboardGraphics(getClickMarkerBillboardOptions(currentClickMarkerStyle))
+        });
+      }
+      return valueMarkerEntity;
+    }
+
+    function applyClickMarkerStyle(){
+      const entity = ensureValueMarkerEntity();
+      if (!entity?.billboard) return;
+      const opts = getClickMarkerBillboardOptions(currentClickMarkerStyle);
+      entity.billboard.image = opts.image;
+      entity.billboard.width = opts.width;
+      entity.billboard.height = opts.height;
+      entity.billboard.verticalOrigin = opts.verticalOrigin;
+      entity.billboard.heightReference = opts.heightReference;
+      entity.billboard.disableDepthTestDistance = opts.disableDepthTestDistance;
+    }
+
+    function showValueMarker(lon, lat){
+      const entity = ensureValueMarkerEntity();
+      if (!entity) return;
+      entity.position = Cesium.Cartesian3.fromDegrees(lon, lat);
+      applyClickMarkerStyle();
+      entity.show = true;
+    }
+
+    function hideValueMarker(){
+      if (valueMarkerEntity) valueMarkerEntity.show = false;
+    }
+
+    function updateClickMarkerButtons(){
+      return;
+    }
+
+    function setClickMarkerStyle(style, persist = true){
+      currentClickMarkerStyle = "crosshair";
+      applyClickMarkerStyle();
+    }
+
+    function createClickMarkerControls(){
+      setClickMarkerStyle("crosshair", false);
+    }
+
     function removeValueLabel(){
       valueOverlayCartesian = null;
       valueOverlayEl.classList.remove("show");
       valueOverlayEl.style.left = "-9999px";
       valueOverlayEl.style.top = "-9999px";
+      hideValueMarker();
     }
 
     function isNoData(v, nodataValue){
@@ -2220,6 +2346,7 @@
       valueUnitEl.textContent = secondaryText || "";
       valueUnitEl.style.display = secondaryText ? "" : "none";
       valueOverlayCartesian = Cesium.Cartesian3.fromDegrees(lon, lat);
+      showValueMarker(lon, lat);
       updateValueOverlayScreenPosition();
     }
 
@@ -2406,14 +2533,7 @@
     }
 
     function getHotspotChildEnabled(type){
-      const state = getLayerState();
-      if (type === "hotspot") {
-        return Object.prototype.hasOwnProperty.call(state, "hotspots_hot") ? !!state.hotspots_hot : true;
-      }
-      if (type === "coldspot") {
-        return Object.prototype.hasOwnProperty.call(state, "hotspots_cold") ? !!state.hotspots_cold : true;
-      }
-      return true;
+      return getLayerEnabled(type === "coldspot" ? "hotspots_cold" : "hotspots_hot");
     }
 
     function getDesiredHotspotCities(){
@@ -3596,6 +3716,11 @@
         controls_panel: "Controls Panel",
         active: "active",
         selected: "Selected",
+        click_marker_title: "Click Marker",
+        click_marker_group_label: "Click marker style",
+        marker_pin: "Pin",
+        marker_circle: "Circle",
+        marker_crosshair: "Crosshair",
         layers: "Layers",
         legend_title: "LCZ Classes",
         legend_waiting: "Turn on LCZ to view the class legend here.",
@@ -3608,7 +3733,6 @@
         layer_hotspots: "Hotspots",
         layer_hotspots_hot: "Hotspots",
         layer_hotspots_cold: "Coldspots",
-        hotspot_subselection_hint: "Sub-selection",
         layer_greenness: "Greenness",
         layer_builtup: "Built-up",
         layer_water: "Water Proximity",
@@ -3657,6 +3781,11 @@
         controls_panel: "Steuerung",
         active: "aktiv",
         selected: "Auswahl",
+        click_marker_title: "Klickmarkierung",
+        click_marker_group_label: "Stil der Klickmarkierung",
+        marker_pin: "Pin",
+        marker_circle: "Kreis",
+        marker_crosshair: "Fadenkreuz",
         layers: "Ebenen",
         legend_title: "LCZ-Klassen",
         legend_waiting: "Schalte LCZ ein, damit die Klassenlegende hier erscheint.",
@@ -3669,7 +3798,6 @@
         layer_hotspots: "Hotspots",
         layer_hotspots_hot: "Hotspots",
         layer_hotspots_cold: "Coldspots",
-        hotspot_subselection_hint: "Unterauswahl",
         layer_greenness: "Vegetation",
         layer_builtup: "Bebauung",
         layer_water: "Wassernähe",
@@ -3776,11 +3904,13 @@
       const dot = document.querySelector("#leftPanel .panelHeader .dot");
       if (dot) dot.setAttribute("title", tr("active"));
 
-      const cts = document.querySelectorAll("#leftPanel .card .ct");
-      if (cts && cts.length >= 2) {
-        cts[0].textContent = tr("selected");
-        cts[1].textContent = tr("layers");
-      }
+      const selectedCardTitle = document.getElementById("selectedCardTitle");
+      const legendCardTitle = document.getElementById("legendCardTitle");
+      const layersCardTitle = document.getElementById("layersCardTitle");
+      if (selectedCardTitle) selectedCardTitle.textContent = tr("selected");
+      if (legendCardTitle) legendCardTitle.textContent = tr("legend_title");
+      if (layersCardTitle) layersCardTitle.textContent = tr("layers");
+
       renderLegend();
 
       const secTitles = document.querySelectorAll(".layerSectionTitle");
@@ -3795,10 +3925,8 @@
         if (el) el.textContent = tr(labelKey);
       };
       setLayerName("hotspots", "layer_hotspots");
-      const hotspotHintEl = document.querySelector('.subLayerHint');
       const hotspotHotEl = document.querySelector('.subLayerRow[data-toggle-row="hotspots_hot"] .subLayerName');
       const hotspotColdEl = document.querySelector('.subLayerRow[data-toggle-row="hotspots_cold"] .subLayerName');
-      if (hotspotHintEl) hotspotHintEl.textContent = tr("hotspot_subselection_hint");
       if (hotspotHotEl) hotspotHotEl.textContent = tr("layer_hotspots_hot");
       if (hotspotColdEl) hotspotColdEl.textContent = tr("layer_hotspots_cold");
       setLayerName("ndvi", "layer_greenness");
@@ -4130,7 +4258,7 @@
 
           const key = row.getAttribute("data-toggle-row");
           const cb = document.querySelector(`.layerSwitch[data-layer="${key}"]`);
-          if (!cb || cb.disabled) return;
+          if (!cb) return;
           cb.checked = !cb.checked;
           cb.dispatchEvent(new Event("change", { bubbles: true }));
         });
@@ -4139,7 +4267,6 @@
       document.querySelectorAll(".layerSwitch").forEach((cb) => {
         const key = cb.dataset.layer;
         const state = getLayerState();
-
         cb.checked = Object.prototype.hasOwnProperty.call(state, key) ? !!state[key] : false;
 
         if (RASTER_KEYS.includes(key)) {
@@ -4149,7 +4276,7 @@
         } else if (key === "buildings3d") {
           buildingsEnabled = cb.checked;
           void updateBuildingsVisibility().catch(console.error);
-        } else if (key === "hotspots") {
+        } else if (key === "hotspots" || key === "hotspots_hot" || key === "hotspots_cold") {
           updateHotspotSubLayerGroup();
           updateHotspotOpacityControlVisibility(getLayerEnabled("hotspots"));
           applyHotspotVisibility();
@@ -4186,20 +4313,10 @@
             return;
           }
 
-          if (key === "hotspots") {
+          if (key === "hotspots" || key === "hotspots_hot" || key === "hotspots_cold") {
             updateHotspotSubLayerGroup();
             updateHotspotOpacityControlVisibility(getLayerEnabled("hotspots"));
             await refreshHotspotLayers();
-            return;
-          }
-
-          if (key === "hotspots_hot") {
-            applyHotspotVisibility();
-            return;
-          }
-
-          if (key === "hotspots_cold") {
-            applyHotspotVisibility();
             return;
           }
 
@@ -4285,6 +4402,7 @@
 
       wireInfoButtons();
       resetAllDashboardLayersOff();
+      createClickMarkerControls();
       createOpacityControls();
       createHotspotOpacityControl();
       wireLayerSwitches();
@@ -4299,6 +4417,7 @@
       window.refreshRasterLayers = refreshRasterLayers;
       window.refreshHotspotLayers = refreshHotspotLayers;
       window.removeValueLabel = removeValueLabel;
+      window.setClickMarkerStyle = setClickMarkerStyle;
     })();
 
     const themeToggle = document.getElementById("themeToggle");
