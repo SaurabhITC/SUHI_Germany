@@ -1677,7 +1677,7 @@
     let hotspotOpacityRuntimeValue = HOTSPOT_DEFAULT_OPACITY;
 
     const RASTER_KEYS = ["lst", "suhi", "ndvi", "ndbi", "ndwi", "albedo", "lcz"];
-    const AVAILABLE_RASTER_KEYS = ["lst", "suhi", "ndvi", "ndbi", "ndwi", "lcz"];
+    const AVAILABLE_RASTER_KEYS = ["lst", "suhi", "ndvi", "ndbi", "ndwi", "albedo", "lcz"];
     const rasterPriority = [];
 
     const rasterStates = {
@@ -1817,9 +1817,9 @@
         title: "Albedo",
         unit: "",
         alpha: 1.0,
-        displayRange: { min: 0, max: 1 },
-        legendTicks: ["0", "0.25", "0.5", "0.75", "1"],
-        legendNote: "Darker shades indicate lower reflectance and lighter shades indicate higher reflectance.",
+        displayRange: { min: 0.05, max: 0.30 },
+        legendTicks: ["0.05", "0.10", "0.15", "0.20", "0.25", "0.30"],
+        legendNote: "Display stretch fixed to 0.05–0.30 for readability across all city-year maps; click values remain raw albedo values.",
         candidates(city, year){
           return [
             `data/rasters/Albedo/Albedo_${city}_${year}_4326_cog.tif`,
@@ -1896,9 +1896,11 @@
         [1.00, [32, 84, 173]]
       ],
       albedo: [
-        [0.00, [52, 52, 52]],
-        [0.50, [176, 176, 176]],
-        [1.00, [245, 245, 245]]
+        [0.00, [8, 48, 107]],
+        [0.25, [33, 102, 172]],
+        [0.50, [78, 161, 214]],
+        [0.75, [170, 210, 230]],
+        [1.00, [242, 248, 255]]
       ]
     };
 
@@ -2511,12 +2513,6 @@
         jobs.push(ensureRasterLayerForSelection(key));
       }
 
-      // unsupported toggles: keep hidden
-      for (const key of ["albedo"]) {
-        const s = rasterStates[key];
-        hideRasterStateLayers(s);
-      }
-
       try {
         await Promise.all(jobs);
       } catch (err) {
@@ -3019,10 +3015,16 @@
       }
     }
 
-    async function handleSelectionChange(){
+    async function handleSelectionChange(options = {}){
+      const { flyToCity = false } = options;
+
       updateSelectedLabel();
       applyBoundaryVisibility();
-      flyToBoundaryTopDown(selectedCity);
+
+      if (flyToCity) {
+        flyToBoundaryTopDown(selectedCity);
+      }
+
       await refreshRasterLayers();
       await refreshHotspotLayers();
       void updateBuildingsVisibility().catch(err => console.error("[3D Buildings] update failed:", err));
@@ -4378,12 +4380,12 @@
 
       setupPills("cityPills", "city", async (city) => {
         selectedCity = city;
-        await handleSelectionChange();
+        await handleSelectionChange({ flyToCity: true });
       });
 
       setupPills("yearPills", "year", async (year) => {
         selectedYear = year;
-        await handleSelectionChange();
+        await handleSelectionChange({ flyToCity: false });
       });
 
       setupPills("langPills", "lang", (lang) => {
@@ -4408,7 +4410,7 @@
       wireLayerSwitches();
       renderLegend();
 
-      await handleSelectionChange();
+      await handleSelectionChange({ flyToCity: true });
       setupRasterClickValueHandler();
 
       window.viewer = viewer;
