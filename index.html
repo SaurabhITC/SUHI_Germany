@@ -1288,6 +1288,7 @@
       font-size: 13px;
       line-height: 1.45;
       color: var(--text);
+      white-space: pre-line;
     }
     .modalSection ul{
       margin: 8px 0 0 18px;
@@ -1668,6 +1669,90 @@
 
     const buildingTilesets = new Map();
     let buildingsEnabled = false;
+
+    const DEFAULT_BUILDING_OPACITY = 1.00;
+    let buildingOpacityRuntimeValue = DEFAULT_BUILDING_OPACITY;
+
+    function clampBuildingOpacity(value){
+      const num = Number(value);
+      if (!Number.isFinite(num)) return DEFAULT_BUILDING_OPACITY;
+      return Math.max(0, Math.min(1, num));
+    }
+
+    function getBuildingOpacity(){
+      return clampBuildingOpacity(buildingOpacityRuntimeValue);
+    }
+
+    function setBuildingOpacity(value){
+      buildingOpacityRuntimeValue = clampBuildingOpacity(value);
+      return buildingOpacityRuntimeValue;
+    }
+
+    function buildBuildingCustomShader(opacity){
+      const shaderConfig = {
+        lightingModel: Cesium.LightingModel.UNLIT,
+        uniforms: {
+          u_opacity: {
+            type: Cesium.UniformType.FLOAT,
+            value: opacity
+          }
+        },
+        fragmentShaderText: `
+          void fragmentMain(FragmentInput fsInput, inout czm_modelMaterial material)
+          {
+            vec3 normalEC = normalize(fsInput.attributes.normalEC);
+
+            float roofMask = smoothstep(0.58, 0.88, abs(normalEC.z));
+            vec3 wallColor = vec3(0.58, 0.61, 0.64);
+            vec3 roofColor = vec3(0.72, 0.74, 0.76);
+            vec3 edgeColor = vec3(0.10, 0.11, 0.12);
+
+            vec3 baseColor = mix(wallColor, roofColor, roofMask);
+
+            float edgeFromNormals = length(fwidth(normalEC));
+            float edgeFromRoofBreak = fwidth(roofMask);
+            float edgeMask = smoothstep(0.10, 0.24, edgeFromNormals + edgeFromRoofBreak * 1.25);
+
+            material.diffuse = mix(baseColor, edgeColor, edgeMask * 0.92);
+            material.alpha = u_opacity;
+          }
+        `
+      };
+
+      if (Cesium.CustomShaderTranslucencyMode) {
+        shaderConfig.translucencyMode = Cesium.CustomShaderTranslucencyMode.TRANSLUCENT;
+      }
+
+      return new Cesium.CustomShader(shaderConfig);
+    }
+
+    function applyBuildingAppearanceToTileset(ts){
+      if (!ts) return;
+      const opacity = getBuildingOpacity();
+
+      if (ts.customShader && typeof ts.customShader.destroy === "function") {
+        ts.customShader = ts.customShader.destroy();
+      }
+      ts.customShader = undefined;
+      ts.style = undefined;
+
+      try {
+        ts.customShader = buildBuildingCustomShader(opacity);
+      } catch (err) {
+        console.warn("[3D Buildings] Edge shader failed, falling back to plain building color.", err);
+        ts.customShader = undefined;
+        ts.style = new Cesium.Cesium3DTileStyle({
+          color: `color('#b8b8b8', ${opacity.toFixed(3)})`
+        });
+      }
+    }
+
+    function applyBuildingAppearance(){
+      for (const [, ts] of buildingTilesets) {
+        applyBuildingAppearanceToTileset(ts);
+      }
+      if (viewer && viewer.scene) viewer.scene.requestRender();
+    }
 
     const hotspotRuntime = {
       requestedToken: 0,
@@ -2987,6 +3072,7 @@
       const ts = await Cesium.Cesium3DTileset.fromIonAssetId(assetId);
       ts.show = false;
       ts.shadows = Cesium.ShadowMode.ENABLED;
+      applyBuildingAppearanceToTileset(ts);
 
       viewer.scene.primitives.add(ts);
       buildingTilesets.set(city, ts);
@@ -3272,6 +3358,48 @@
       updateHotspotOpacityControlVisibility(getLayerEnabled('hotspots'));
     }
 
+    function updateBuildingOpacityControlVisibility(isOn){
+      const control = document.querySelector('.opacityControl[data-opacity-control="buildings3d"]');
+      if (control) control.classList.toggle('open', !!isOn);
+    }
+
+    function applyBuildingOpacity(value){
+      const opacity = setBuildingOpacity(value);
+      const control = document.querySelector('.opacityControl[data-opacity-control="buildings3d"]');
+      if (control) {
+        const range = control.querySelector('.opacityRange');
+        const valueEl = control.querySelector('.opacityValue');
+        const pct = Math.round(opacity * 100);
+        if (range && Number(range.value) !== pct) range.value = String(pct);
+        if (valueEl) valueEl.textContent = `${pct}%`;
+      }
+      applyBuildingAppearance();
+      return opacity;
+    }
+
+    function createBuildingOpacityControl(){
+      const row = document.querySelector('.layerRow[data-toggle-row="buildings3d"]');
+      if (!row || document.querySelector('.opacityControl[data-opacity-control="buildings3d"]')) return;
+
+      const control = document.createElement('div');
+      control.className = 'opacityControl';
+      control.dataset.opacityControl = 'buildings3d';
+      control.innerHTML = `
+        <span class="opacityLabel">Opacity</span>
+        <input class="opacityRange" type="range" min="0" max="100" step="1" value="100" aria-label="3D Buildings opacity" />
+        <span class="opacityValue">100%</span>`;
+
+      control.addEventListener('click', (e) => e.stopPropagation());
+      const range = control.querySelector('.opacityRange');
+      range.addEventListener('input', (e) => {
+        applyBuildingOpacity(Number(e.target.value) / 100);
+      });
+
+      row.insertAdjacentElement('afterend', control);
+      applyBuildingOpacity(getBuildingOpacity());
+      updateBuildingOpacityControlVisibility(getLayerEnabled('buildings3d'));
+    }
+
     function registerLayer(key, cesiumObj){
       LAYER_REGISTRY[key] = cesiumObj;
       const state = getLayerState();
@@ -3286,221 +3414,318 @@
 
     const LAYER_INFO = {
       overview: {
-        title: "Dashboard overview",
-        subtitle: "Explore Surface Urban Heat Island (SUHI) patterns and drivers",
-        what:
-          "This dashboard helps you explore surface heat patterns (LST and SUHI) and related environmental/context layers for selected German cities and years. Use it to compare where surfaces are hotter or cooler, and how factors like vegetation, built-up intensity, water influence, albedo, LCZ classes, and 3D urban form relate to those patterns.",
-        units: "Different layers use different units (°C for LST/SUHI, unitless indices for greenness/built-up/albedo, categorical classes for LCZ).",
-        interpret: [
-          "Choose a City and Year from the pills at the top.",
-          "Turn layers on/off from the Controls Panel on the left; click the small info icon next to any layer to read definitions and limitations.",
-          "Use the mouse/trackpad to move around the map and zoom in/out to inspect neighbourhood-scale patterns.",
-          "Compare layers together (e.g., SUHI with Greenness or Built-up) to understand likely drivers."
-        ],
-        limitations: [
-          "LST and SUHI are surface-based metrics and can differ from air-temperature heat exposure experienced by people.",
-          "Values and patterns depend on acquisition timing, season, cloud screening, and spatial resolution; interpret maps as comparative patterns rather than exact point measurements.",
-          "Hotspot results depend on the chosen method and parameters; treat them as indicators to investigate with additional context."
-        ],
-        refs: [
-          "Voogt & Oke (2003) – Thermal remote sensing of urban climates.",
-          "Stewart & Oke (2012) – Local Climate Zones framework.",
-          "Weng (2009) – Thermal infrared remote sensing for urban climate studies."
-        ]
-      },
+  title: "Dashboard overview",
+  subtitle: "Explore Surface Urban Heat Island (SUHI) patterns and drivers",
+  what: `This dashboard is designed to support the exploration of daytime summer surface heat patterns and their possible environmental and urban-form controls across the German cities of Essen, Wuppertal, and Soest for the years 2022 and 2024. It brings together multiple spatial layers in a single interactive environment so that users can examine where surfaces are hotter or cooler, compare patterns between cities and years, and understand how these patterns relate to vegetation, built-up surfaces, water-related influence, surface reflectivity, land-cover classes, hotspot clustering, and 3D urban structure.
+
+The two main thermal layers in the dashboard are Land Surface Temperature (LST) and Surface Urban Heat Island intensity (SUHI). These are complemented by contextual layers that help explain spatial variation in heat conditions, including Greenness (NDVI), Built-up (NDBI), Water Proximity (MNDWI-based information), Surface Albedo, Local Climate Zones (LCZ), Hotspots & Coldspots, and 3D Buildings. Together, these layers allow the user not only to identify areas of stronger or weaker heat, but also to interpret why such patterns may occur.
+
+The dashboard is therefore intended as an interactive exploratory and comparative tool. It is not limited to showing temperature alone. Instead, it allows users to move between cities and years, switch layers on and off, view different base maps, inspect local values, and compare multiple types of spatial information in the same map environment. In this way, it helps users understand both the distribution of surface heat and the urban and environmental context in which that heat occurs.
+
+The interface is structured so that the most important controls are always visible. At the top, the user can choose the city and year, switch between dark and light theme, reopen this overview, and change the interface language between English and German. The main map occupies the center of the dashboard and is used for visualization and interaction. The Controls Panel on the left contains the available thematic layers, grouped into Heat Stressors, Environmental Drivers, and Urban Morphometrics. Each layer also has an info button, which opens a detailed explanation of what the layer represents, how it should be interpreted, and what its main limitations are.
+
+At the bottom-right of the map, the dashboard also includes an AI Assistant panel. This can be opened to ask quick conceptual questions while exploring the dashboard. It is intended as a support feature for understanding terms and concepts rather than as a replacement for the map itself.
+
+Overall, the dashboard should be understood as a platform for interpreting spatial heat patterns in relation to urban structure and environmental conditions, rather than as a single-temperature viewer.`,
+  units: `Different layers in the dashboard use different units and data types.
+
+LST is shown in degrees Celsius (°C).
+SUHI is shown as a degrees Celsius (°C) difference relative to a rural reference.
+NDVI, NDBI, MNDWI, and Albedo are unitless indices or values.
+LCZ is a categorical classification layer.
+Hotspots & Coldspots are categorical outputs from statistical clustering analysis.
+3D Buildings provide geometric urban-form context, and where height is available it is generally expressed in metres.
+
+Because the dashboard combines different kinds of data, users should always read each layer according to its own definition rather than assume that all layers represent the same kind of measurement.`,
+  interpret: [
+    "At the top of the dashboard, use the City selector to switch between All, Wuppertal, Essen, and Soest.",
+    "Use the Year selector to switch between 2022 and 2024.",
+    "When All cities is selected, the dashboard shows the combined study extent. When a single city is selected, the map view focuses on that city.",
+    "The Selected card in the left panel always shows the currently active city and year combination.",
+    "The Dark / Light theme button changes the interface appearance.",
+    "The Overview button reopens this general dashboard explanation at any time.",
+    "The EN / DE language selector switches the interface language between English and German.",
+    "The main map is interactive. You can pan, zoom, and inspect the mapped patterns directly.",
+    "Standard Cesium controls are available in the map area, including the Home button, which returns the map to the default top-down view for the current city selection, the search/geocoder control if you want to search locations, the scene mode or map view controls available through Cesium, the base map selector which allows switching between available background map styles, the navigation help control, and the fullscreen control.",
+    "The dashboard uses terrain-enabled Cesium visualization, so the map is not only a flat image viewer but a navigable geospatial scene.",
+    "The Controls Panel on the left contains the thematic layers.",
+    "Layers are grouped into Heat Stressors, Environmental Drivers, and Urban Morphometrics.",
+    "Heat Stressors include LST, SUHI, and Hotspots.",
+    "Environmental Drivers include Greenness, Built-up, Water Proximity, Surface Albedo, and LCZ.",
+    "Urban Morphometrics currently includes 3D Buildings.",
+    "Each layer has a toggle switch. Turning the switch on displays that layer on the map. Turning it off hides it.",
+    "Next to each layer name is a small info icon. Clicking this opens a popup with the detailed explanation for that layer.",
+    "For most raster layers, an opacity control appears when the layer is turned on. This allows the user to adjust transparency and compare the layer more clearly against the base map or against other active layers.",
+    "The 3D Buildings layer also includes an opacity setting so the user can adjust how strongly the building geometry appears in the scene.",
+    "The Hotspots layer has a special structure.",
+    "First, the main Hotspots switch must be turned on.",
+    "Once it is active, two nested sublayers become available: Hotspots and Coldspots.",
+    "These can be switched separately so that the user can view only hotspots, only coldspots, or both together.",
+    "This makes it easier to inspect statistically clustered hot and cool areas independently.",
+    "The legend appears automatically in the map area when a relevant layer is active.",
+    "The legend updates depending on the currently displayed thematic content.",
+    "For continuous raster layers such as LST, SUHI, NDVI, NDBI, MNDWI, and Albedo, the legend shows a color ramp and value range.",
+    "For LCZ, the legend shows the class colors and class names.",
+    "For Hotspots, the legend shows hotspot and coldspot color categories.",
+    "This means the legend is dynamic and only appears when it is relevant.",
+    "When a raster layer is active, clicking on the map allows the dashboard to display the value at that location.",
+    "A small marker is placed at the clicked location and a value label appears above it.",
+    "This is useful for checking the local value of LST, SUHI, NDVI, NDBI, MNDWI, Albedo, or LCZ class at a specific position.",
+    "In All cities mode, if you click inside one of the city extents while using an active raster layer, the dashboard can use that interaction to move into the corresponding city context more specifically.",
+    "The 3D Buildings layer provides additional urban-form context.",
+    "It does not represent heat directly, but it helps the user visually interpret how building shape, spacing, and structure may relate to the mapped heat patterns.",
+    "It is especially useful when compared together with LST, SUHI, LCZ, and the other environmental layers.",
+    "The AI Assistant button in the lower-right corner opens a side panel.",
+    "This assistant can be used to ask quick explanatory questions while using the dashboard.",
+    "It is intended for help with concepts, terminology, and general understanding during exploration.",
+    "It should be understood as a support tool within the interface rather than as a core analytical layer.",
+    "A Development Notice is shown at the top of the dashboard.",
+    "This indicates that the dashboard is still a prototype.",
+    "Users should therefore expect that some elements may still be refined and that functionality, content, or design may change over time.",
+    "Start by selecting a city and year.",
+    "Turn on LST to see the direct surface temperature pattern.",
+    "Turn on SUHI to see where urban surfaces are warmer or cooler relative to the rural reference.",
+    "Then compare these heat layers with the contextual layers.",
+    "Greenness helps indicate vegetation presence.",
+    "Built-up helps indicate sealed and impervious surfaces.",
+    "Water Proximity helps indicate water-related influence.",
+    "Albedo helps indicate surface reflectivity.",
+    "LCZ provides standardized urban and land-cover class context.",
+    "Hotspots & Coldspots highlight statistically clustered heat concentration.",
+    "3D Buildings provide visual urban-form context.",
+    "The dashboard is most useful when interpreted through layer comparison, not by reading one layer in isolation.",
+    "For example, areas with high LST and high NDBI may indicate strongly built-up and sealed surfaces.",
+    "Areas with high NDVI and lower LST may reflect vegetation-related cooling.",
+    "Hotspot clusters can be compared with LCZ and 3D buildings to understand whether heat concentration aligns with denser urban structure.",
+    "The interface is therefore intended to support comparative spatial reasoning, where heat patterns are interpreted alongside the environmental and urban layers that may help explain them."
+  ],
+  limitations: [
+    "The dashboard focuses mainly on surface-based thermal conditions, especially LST and SUHI. These are not the same as near-surface air temperature or direct human thermal exposure.",
+    "Several layers are satellite-derived indicators or processed analytical outputs, so they should be interpreted as spatial representations and comparative indicators rather than perfect ground truth.",
+    "The mapped patterns depend on data source, spatial resolution, seasonal selection, preprocessing choices, and availability of valid observations.",
+    "The heat patterns shown are best read as broad spatial patterns rather than exact point measurements everywhere.",
+    "Hotspots & Coldspots are statistical clustering results and should not be confused with direct temperature values.",
+    "LCZ and 3D Buildings add important contextual information, but they do not directly measure heat on their own.",
+    "The dashboard is a prototype under development, so some features, styling choices, or interaction details may still evolve.",
+    "The most reliable use of the dashboard is for exploration, interpretation, and comparison of spatial patterns, especially when several layers are considered together."
+  ],
+  refs: []
+},
 
       lst: {
-        title: "LST (°C)",
-        subtitle: "Land Surface Temperature (surface ‘skin’ temperature)",
-        what:
-          "LST represents the radiometric temperature of the Earth’s surface (roofs, asphalt, soil, vegetation) retrieved from thermal infrared measurements. It is not the same as near-surface air temperature.",
-        units: "Degrees Celsius (°C).",
-        interpret: [
-          "Higher LST often indicates hotter impervious surfaces under strong solar radiation (e.g., asphalt/roofs).",
-          "Vegetation and water typically show lower daytime LST due to shading and evapotranspiration / high heat capacity.",
-          "Compare LST patterns together with land cover and time of day/season."
-        ],
-        limitations: [
-          "Strongly affected by time of acquisition, clouds/haze, and atmospheric correction assumptions.",
-          "Topography, shadowing, and view angle can influence values in complex terrain and urban canyons.",
-          "LST is a surface metric; human heat exposure depends also on air temperature, humidity, wind and radiation."
-        ],
-        refs: [
-          "Voogt & Oke (2003) – Thermal remote sensing of urban climates.",
-          "Weng (2009) – Thermal infrared remote sensing for urban climate studies."
-        ]
-      },
+  title: "LST (°C)",
+  subtitle: "Land Surface Temperature (surface ‘skin’ temperature)",
+  what: `This layer shows Land Surface Temperature (LST), which represents how hot the ground and other surface materials are at the time the sensor records them. In practical terms, it describes the temperature of the Earth’s outer surface, such as roofs, roads, bare soil, paved areas, and vegetation canopies, rather than the temperature of the air measured at human height.
+
+The layer is based on ECOSTRESS thermal data. ECOSTRESS is a thermal sensor that measures the heat emitted from the Earth’s surface and uses it to estimate surface temperature. In this dashboard, the mapped values are shown in degrees Celsius and represent daytime summer surface conditions for the selected city and year.
+
+Using ECOSTRESS is especially useful for urban heat studies because it is designed to observe surface temperature in relatively high spatial detail compared with many broader-scale thermal satellite products. This makes it better suited for showing temperature differences within cities, where heat can vary strongly between built-up areas, vegetation, transport surfaces, and open land. Another important difference is that ECOSTRESS observations come from the International Space Station, so acquisition times are not fixed in exactly the same way as some traditional satellites. This makes the dataset particularly valuable for studying surface temperature patterns under different daytime conditions.
+
+LST should therefore be understood as a satellite-derived surface temperature measurement, not as near-surface air temperature. A surface can become much hotter than the surrounding air under strong sunlight, especially where materials are dark, dry, sealed, or exposed.
+
+This layer is useful because it helps identify where the city surface is heating more strongly during the day. It can be interpreted together with SUHI, vegetation, built-up patterns, water-related layers, albedo, LCZ, and urban form in order to understand how land cover and urban structure relate to spatial heat patterns.`,
+  units: "LST is expressed in degrees Celsius (°C).",
+  interpret: [
+    "Higher LST values indicate hotter surface conditions at the time of observation.",
+    "Lower LST values indicate cooler surface conditions.",
+    "Built-up, sealed, and sparsely vegetated areas often show higher daytime LST, while vegetation and water-related surfaces often show lower values.",
+    "The layer should be interpreted as a map of surface temperature, not of human-experienced air temperature."
+  ],
+  limitations: [
+    "LST depends on the time of satellite observation and represents conditions only at that observation time.",
+    "Cloud cover, atmospheric conditions, shadows, and surface moisture can influence the result.",
+    "Surface temperature does not directly equal air temperature, thermal comfort, or heat exposure experienced by people.",
+    "The mapped pattern is also influenced by land cover, material properties, solar exposure, and seasonal conditions."
+  ],
+  refs: []
+},
 
       suhi: {
-        title: "SUHI (°C)",
-        subtitle: "Surface Urban Heat Island intensity (urban vs. rural surface temperature)",
-        what:
-          "SUHI describes how much warmer (or cooler) urban surfaces are compared to a rural reference, using LST. It is commonly expressed as an urban-rural temperature difference.",
-        units: "Degrees Celsius (°C) difference.",
-        interpret: [
-          "Positive SUHI means urban surfaces are hotter than the rural reference.",
-          "Spatial SUHI patterns often relate to imperviousness, vegetation cover, building form, and moisture availability.",
-          "Interpret SUHI alongside the chosen ‘urban’ and ‘rural’ definitions (e.g., LCZ-based)."
-        ],
-        limitations: [
-          "Depends on how ‘urban’ and ‘rural’ areas are defined and the chosen reference area.",
-          "Surface-based UHI differs from canopy/air-temperature UHI; magnitudes may not match.",
-          "Day/night and seasonal differences can be large."
-        ],
-        refs: [
-          "Oke (1982) – Urban heat island review (conceptual foundations).",
-          "Stewart & Oke (2012) – Local Climate Zones framework for consistent urban-rural comparisons."
-        ]
-      },
+  title: "SUHI (°C)",
+  subtitle: "Surface Urban Heat Island intensity (urban vs. rural surface temperature)",
+  what: `This layer shows Surface Urban Heat Island (SUHI) intensity, which describes how much warmer or cooler urban surfaces are compared with a rural reference. It is based on Land Surface Temperature (LST) rather than air temperature.
 
-      hotspots: {
-        title: "Hotspots & Coldspots",
-        subtitle: "Statistically clustered hot and cool surface areas",
-        what:
-          "This layer shows dissolved Gi* cluster polygons from the selected city and year. Red polygons represent hotspots (clusters of relatively high surface heat), while blue polygons represent coldspots (clusters of relatively cool surface conditions).",
-        units: "Categorical hotspot/coldspot classes derived from the hotspot analysis output.",
-        interpret: [
-          "Turn the main Hotspots switch on to load the matching city-year GeoJSON file, then use the nested Hotspots and Coldspots switches to show each class separately.",
-          "Hotspots can indicate persistent heat-risk locations such as dense built-up areas with low vegetation, while coldspots often coincide with greener, wetter, or less urbanized surfaces.",
-          "Because these are spatial clusters, they represent local concentration patterns rather than just isolated high or low pixels."
-        ],
-        limitations: [
-          "Results depend on the method and parameters (neighborhood distance/bandwidth, multiple testing, thresholds).",
-          "Edge effects and irregular sampling can bias hotspot detection.",
-          "Hotspots are not automatically ‘danger’ — combine with population/exposure information for risk."
-        ],
-        refs: [
-          "Getis & Ord (1992); Ord & Getis (1995) – Local spatial association / Gi* hotspot statistics."
-        ]
-      },
+In this dashboard, SUHI was derived from the ECOSTRESS-based LST data. The calculation compares urban surface temperatures against a rural baseline so that the mapped values show the relative surface heat difference between urban and rural conditions. In simple terms, it does not just show whether a place is hot, but whether it is hotter or cooler than the rural reference used for that city and year.
+
+For this project, the rural reference was defined using non-urban LCZ classes, and SUHI was calculated as the difference between the local surface temperature and that rural reference value. This means the layer should be understood as a relative surface temperature indicator, not as an absolute temperature map on its own.
+
+This layer is useful because it highlights where urban surfaces show stronger heat amplification relative to surrounding rural conditions. It therefore helps show the spatial pattern of the urban heat island more clearly than LST alone. It can be interpreted together with vegetation, built-up patterns, water-related layers, albedo, LCZ, hotspots, and urban form to understand why some urban areas show stronger heat island effects than others.`,
+  units: "SUHI is expressed in degrees Celsius (°C) difference.",
+  interpret: [
+    "Positive SUHI values indicate surfaces that are warmer than the rural reference.",
+    "Negative SUHI values indicate surfaces that are cooler than the rural reference.",
+    "Higher positive values indicate a stronger surface urban heat island effect.",
+    "The layer should be interpreted as a map of urban-rural surface temperature difference, not as a direct map of air temperature or human heat stress."
+  ],
+  limitations: [
+    "SUHI depends on how the urban and rural areas are defined and on how the rural reference is calculated.",
+    "It is based on surface temperature, so it is not the same as canopy-layer or air-temperature urban heat island.",
+    "The result depends on the observation time, seasonal conditions, and the quality of the underlying LST data.",
+    "SUHI values can vary across cities and years depending on land cover, moisture conditions, vegetation, and the chosen rural baseline."
+  ],
+  refs: []
+},
+
+      hotspots: { 
+  title: "Hotspots & Coldspots",
+  subtitle: "Statistically clustered hot and cool surface areas",
+  what: `This layer shows areas where relatively high or relatively low SUHI values form statistically significant spatial clusters within the urban part of the city. It is based on a Getis-Ord Gi* hotspot analysis applied to urban SUHI values on a pixel-aligned analysis grid. Only urban cells were included in the analysis, using LCZ classes 1-10 to define the urban area.
+
+In practical terms, the method evaluates each urban grid cell together with its neighbouring urban cells and tests whether high or low SUHI values are clustered more strongly than would be expected by chance. Neighbours were defined using Queen contiguity, meaning cells were treated as neighbours when they touched by an edge or by a corner.
+
+A cell was classified as part of a hotspot when it belonged to a statistically significant cluster of relatively high SUHI values, and as part of a coldspot when it belonged to a statistically significant cluster of relatively low SUHI values. The final class used in the project was the spot field, which combined FDR-corrected significance with the sign of the Gi* z-score: significant positive clustering was labelled hotspot, significant negative clustering was labelled coldspot, and all other cells were treated as not significant.
+
+For dashboard display, the original 70 m grid-based result was simplified for clearer visualization. Only hotspot and coldspot cells were kept, touching cells of the same class were dissolved together, and the final polygons were converted to GeoJSON for web display. This means the dashboard layer is a cleaner cartographic version of the analytical result rather than the raw grid itself.
+
+This layer is useful because it highlights where urban heat or urban coolness is spatially concentrated, rather than only showing isolated high or low values. It can therefore be interpreted together with SUHI, LST, vegetation, built-up patterns, water-related layers, LCZ, and urban form. This helps show where broader heat concentration patterns occur within the city.`,
+  units: "This is a categorical statistical output. It does not represent temperature in degrees Celsius, but hotspot and coldspot classes derived from Gi* clustering analysis.",
+  interpret: [
+    "Hotspots indicate statistically significant clusters of relatively high SUHI values within urban areas.",
+    "Coldspots indicate statistically significant clusters of relatively low SUHI values within urban areas.",
+    "The layer should be read as a map of where heat or coolness is spatially concentrated, not as a map of exact SUHI values.",
+    "It is most useful when interpreted together with SUHI, LST, vegetation, built-up patterns, water-related layers, LCZ, and urban form."
+  ],
+  limitations: [
+    "The result depends on the hotspot analysis design, including how neighbourhood relationships are defined.",
+    "A hotspot does not necessarily mean the single highest SUHI value in the city; it means a statistically significant cluster of relatively high values.",
+    "Likewise, a coldspot does not necessarily mean the single lowest SUHI value; it means a statistically significant cluster of relatively low values.",
+    "The displayed polygons are a dissolved visualization of the analytical result, so they are intended for clear interpretation rather than for showing the original grid cell boundaries."
+  ],
+  refs: []
+},
 
       ndvi: {
-        title: "Greenness",
-        subtitle: "NDVI – Normalized Difference Vegetation Index",
-        what:
-          "NDVI is a spectral index that contrasts near-infrared and red reflectance to indicate vegetation presence and vigor. Higher NDVI generally implies more green vegetation.",
-        units: "Unitless index (typically -1 to +1).",
-        interpret: [
-          "Higher NDVI often corresponds to parks, forests, and healthy vegetation; lower NDVI to built-up, bare soil or water.",
-          "Vegetation can reduce daytime surface temperatures via shading and evapotranspiration.",
-          "Compare NDVI seasonally; values vary strongly with phenology."
-        ],
-        limitations: [
-          "Saturates in dense vegetation and can be influenced by soil background at low vegetation cover.",
-          "Clouds, haze, and shadows can reduce NDVI if not masked properly.",
-          "Different sensors / processing chains can yield slightly different values."
-        ],
-        refs: [
-          "Tucker (1979) – Original NDVI formulation and applications.",
-          "Huete et al. (2002) – Vegetation indices overview (incl. limitations)."
-        ]
-      },
+  title: "Greenness",
+  subtitle: "NDVI – Normalized Difference Vegetation Index",
+  what: `This layer indicates where vegetation is more or less present across the study area. It is based on NDVI, which stands for Normalized Difference Vegetation Index.
+
+NDVI is calculated from satellite data. In practical terms, the satellite records how strongly the ground surface returns incoming sunlight in different parts of light beyond normal photography. Vegetation behaves differently from built-up surfaces, bare soil, or water. Healthy green vegetation tends to return more energy in the near-infrared part of light and less in the red part, and NDVI uses this contrast to make vegetated areas stand out more clearly in the mapped output.
+
+In this dashboard, the layer should therefore be understood as a satellite-derived indicator of vegetation presence and relative greenness, rather than as a direct field measurement collected on the ground. It provides environmental context that can be interpreted together with LST, SUHI, built-up patterns, water-related layers, and the urban form layers.
+
+This layer is useful because vegetation can influence local thermal conditions through shading, evapotranspiration, and surface moisture. Areas with stronger vegetation presence often show reduced daytime surface heating compared with more sealed or sparsely vegetated surfaces. However, the strength of this relationship depends on several other factors, including vegetation type, density, seasonal condition, soil moisture, and surrounding urban structure.`,
+  units: "NDVI is a unitless index. This means it is expressed as numerical values rather than in physical units such as metres or degrees Celsius.",
+  interpret: [
+    "Higher NDVI values generally indicate a stronger presence of vegetation or healthier and denser green cover.",
+    "Lower NDVI values generally indicate non-vegetated surfaces such as built-up land, bare soil, or water.",
+    "The layer should be read as an indicator of vegetation-related surface conditions visible in the satellite data.",
+    "It is most useful when interpreted alongside the other environmental layers in the dashboard."
+  ],
+  limitations: [
+    "NDVI is derived from satellite-based surface observations and is therefore an estimation method rather than a perfect representation of reality.",
+    "Sparse vegetation, exposed soil, shadows, and mixed land cover can affect the result.",
+    "Very dense vegetation can reach similar high NDVI values, which reduces separation at the upper end of the scale.",
+    "Seasonal conditions and differences in vegetation growth can also influence the mapped pattern over time."
+  ],
+  refs: []
+},
 
       ndbi: {
-        title: "Built-up",
-        subtitle: "NDBI – Normalized Difference Built-up Index",
-        what:
-          "NDBI is a spectral index that uses shortwave infrared and near-infrared reflectance to emphasize built-up / impervious surfaces in many landscapes.",
-        units: "Unitless index (often -1 to +1).",
-        interpret: [
-          "Higher NDBI often indicates impervious/built surfaces; lower values often indicate vegetation or water.",
-          "Built-up intensity is frequently associated with higher daytime LST and stronger SUHI.",
-          "Use together with NDVI and water indices for better interpretation."
-        ],
-        limitations: [
-          "Can confuse bright bare soil or some dry materials with built-up surfaces.",
-          "Sensitive to moisture and seasonal conditions; thresholds are not universal.",
-          "Best interpreted as a relative indicator, not a perfect built-up map."
-        ],
-        refs: [
-          "Zha, Gao & Ni (2003) – NDBI method for built-up area mapping."
-        ]
-      },
+  title: "Built-up",
+  subtitle: "NDBI – Normalized Difference Built-up Index",
+  what: `This layer indicates where built-up and more sealed surfaces are more likely to occur within the study area. It is based on NDBI, which stands for Normalized Difference Built-up Index.
+
+NDBI is calculated from satellite data. In practical terms, the satellite records how strongly the ground surface returns incoming sunlight in different parts of light beyond normal photography. Built-up surfaces such as roofs, concrete, paved areas, and other impervious materials often show a different response from vegetation or water. NDBI uses this contrast to make built-up areas stand out more clearly in the mapped output.
+
+In this dashboard, the layer should therefore be understood as a satellite-derived indicator of built-up surface presence or intensity, rather than as a direct measurement collected on the ground. It provides environmental context that can be interpreted together with LST, SUHI, vegetation, water-related layers, and the urban form layers.
+
+This layer is useful because built-up and sealed surfaces are often associated with stronger daytime heating, lower moisture availability, and reduced evaporative cooling. However, the strength of this relationship depends on several other factors, including surface material, shading, vegetation cover, building density, and surrounding urban structure.`,
+  units: "NDBI is a unitless index. This means it is expressed as numerical values rather than in physical units such as metres or degrees Celsius.",
+  interpret: [
+    "Higher NDBI values generally indicate a stronger likelihood of built-up, sealed, or impervious surfaces.",
+    "Lower NDBI values generally indicate non-built surfaces, especially vegetation or water.",
+    "The layer should be read as an indicator of built-up surface conditions visible in the satellite data.",
+    "It is most useful when interpreted alongside the other environmental layers in the dashboard."
+  ],
+  limitations: [
+    "NDBI is derived from satellite-based surface observations and is therefore an estimation method rather than a perfect representation of reality.",
+    "Bright bare soil, dry ground, and some non-urban surfaces can sometimes produce values similar to built-up areas.",
+    "Shadows, mixed land cover, and spatial resolution can affect the result.",
+    "Seasonal surface conditions can also influence the mapped pattern, especially where vegetation cover changes over time."
+  ],
+  refs: []
+},
 
       ndwi: {
-        title: "Water Proximity",
-        subtitle: "Water presence/proximity indicator (NDWI/MNDWI-style information)",
-        what:
-          "This layer represents water influence, commonly derived from water indices (e.g., NDWI/MNDWI) and/or distance to water bodies. Water can moderate local surface temperatures.",
-        units: "Depends on implementation (unitless index and/or distance units).",
-        interpret: [
-          "Water bodies often show lower daytime LST and can cool nearby areas, especially with airflow.",
-          "Use with LST/SUHI to understand where blue infrastructure may reduce heat.",
-          "If distance-based, smaller values mean closer proximity to water."
-        ],
-        limitations: [
-          "Water indices can be affected by shadows, dark surfaces, and turbidity; thresholds vary.",
-          "Small or narrow waterways may be missed at coarser resolutions.",
-          "Cooling impact depends on meteorology, size of water body, and surrounding morphology."
-        ],
-        refs: [
-          "McFeeters (1996) – NDWI for water feature extraction.",
-          "Xu (2006) – MNDWI improving open-water extraction in built-up areas."
-        ]
-      },
+  title: "Water Proximity",
+  subtitle: "Water presence/proximity indicator (MNDWI-based information)",
+  what: `This layer indicates where open water or strongly water-influenced surfaces are likely to occur within the study area. It was produced in Google Earth Engine using the Modified Normalized Difference Water Index (MNDWI).
+
+The method is based on satellite observations. In practical terms, the satellite records how much incoming sunlight is returned from the ground surface in different parts of light beyond normal photography. Because water, vegetation, soil, roads, and buildings return sunlight differently, these differences can be used to distinguish water-related surfaces from surrounding land cover. MNDWI is a standard index that enhances this contrast so that water features can be identified more clearly in the mapped output.
+
+In this dashboard, the layer should therefore be understood as a satellite-derived indicator of water presence or water influence, rather than as a direct field measurement. It provides environmental context that can be interpreted together with LST, SUHI, vegetation, and built-up patterns.
+
+This layer is useful because water bodies and wet surfaces can influence local surface energy balance and, in some settings, help moderate nearby daytime heating. However, the strength and extent of this influence depend on several other factors, including the size of the water body, surrounding land cover, wind conditions, urban form, and seasonal surface moisture.`,
+  units: "MNDWI is a unitless index. This means it is expressed as numerical values rather than in physical units such as metres or degrees Celsius.",
+  interpret: [
+    "Higher MNDWI values generally indicate a stronger likelihood of open water or wetter surface conditions.",
+    "Lower MNDWI values generally indicate non-water surfaces such as built-up land, dry soil, or vegetation.",
+    "The layer should be read as an indicator of water-related surface conditions visible in the satellite data.",
+    "It is most useful when interpreted alongside the other environmental layers in the dashboard."
+  ],
+  limitations: [
+    "MNDWI is derived from satellite-based surface observations and is therefore an estimation method rather than a perfect representation of reality.",
+    "Dark surfaces, shadows, wet ground, and mixed land-cover conditions can affect the result.",
+    "Very small or narrow water bodies may not always be represented clearly, depending on spatial resolution.",
+    "Seasonal differences in water extent, vegetation condition, and surface moisture can also influence the mapped pattern."
+  ],
+  refs: []
+},
 
       albedo: {
-        title: "Surface Albedo",
-        subtitle: "Reflectivity of the surface (shortwave)",
+        title: "Surface Albedo (Sunlight Reflectivity)",
+        subtitle: "Sunlight reflectivity of the surface",
         what:
-          "Albedo is the fraction of incoming sunlight reflected by a surface. Brighter surfaces generally have higher albedo and can absorb less solar energy in daytime.",
-        units: "Unitless fraction (0–1) or percent.",
-        interpret: [
-          "Higher albedo surfaces often heat less under sun, which can reduce daytime LST in some contexts.",
-          "Combine with land cover: high albedo does not always mean ‘cool’ if the surface is dry and lacks evapotranspiration.",
-          "Albedo is especially relevant when comparing roofing materials, pavements, and bare soils."
-        ],
-        limitations: [
-          "Depends on sun angle, atmospheric effects, and how broadband albedo is estimated from reflectance bands.",
-          "Seasonal changes (e.g., wetness) and aging of surfaces can change albedo.",
-          "Urban shading and 3D geometry complicate albedo interpretation at neighborhood scale."
-        ],
-        refs: [
-          "Liang (2001) – Narrowband-to-broadband albedo methods and remote sensing."
-        ]
+          "Surface albedo shows how much sunlight a surface reflects. Darker surfaces such as asphalt, dark roofs, shaded ground, water, or dense vegetation usually reflect less sunlight and absorb more energy, while brighter surfaces such as light roofs, bright concrete, or dry bare soil usually reflect more. In this dashboard, the albedo maps represent seasonal summer conditions for Essen, Wuppertal, and Soest in 2022 and 2024. This means the map does not show just one satellite image from one day. Instead, it summarizes the typical surface reflectivity pattern during the summer period from 1 June to 31 August, so the result is more stable and less affected by short-term weather or one unusual observation. The maps were created from Sentinel-2, a satellite mission that captures reflected sunlight from the Earth’s surface in several wavelength bands, and the final outputs are shown at 20 m resolution, meaning each pixel represents an area of about 20 by 20 metres on the ground.\n\nThis layer is useful because it helps show how different surface materials may influence daytime heating patterns across the city. Lower albedo values are commonly linked to darker and less reflective surfaces, while higher albedo values are more often linked to brighter and more reflective ones. In summer, these differences can be especially meaningful because surfaces are exposed to strong incoming solar radiation, so the contrast between materials that absorb more energy and materials that reflect more energy becomes easier to see in the overall spatial pattern. Even so, albedo should be understood as a property of the surface itself, not as a direct temperature measurement.\n\nAlbedo is therefore not the same as temperature. A bright surface can still be part of a hot urban area if there is little shade, little vegetation, or strong heat storage in the surrounding built environment. In other words, a place may reflect sunlight well but still remain thermally uncomfortable because other factors also affect surface heating and cooling. For that reason, this layer is best interpreted together with LST, SUHI, vegetation, water proximity, and built-up layers rather than on its own.\n\nThese maps should be read as broad summer reflectivity patterns rather than exact momentary conditions. Some variation can still come from cloud masking, surface moisture, seasonal drying or greening, and the satellite-based estimation method itself. Put simply, cloud masking means that cloudy pixels were removed before the map was made, surface moisture matters because wet surfaces often reflect differently from dry ones, and seasonal conditions matter because vegetation and bare soil can change across the summer. To create the final maps, Sentinel-2 summer scenes were first selected for each city and year, very cloudy scenes were removed, cloudy pixels were masked, scenes with too little valid city coverage were discarded, the required spectral bands were brought to a common 20 m grid, and broadband shortwave albedo was then estimated for each remaining scene. Finally, these scene-level albedo images were combined using a median composite to produce one robust summer albedo map per city-year.",
+        units: "Broadband shortwave surface albedo shown as a unitless reflectivity value, mapped at 20 m spatial resolution.",
+        interpret: [],
+        limitations: [],
+        refs: []
       },
 
       lcz: {
         title: "Local Climate Zones (LCZ)",
-        subtitle: "Standardized urban/rural classes based on built form and land cover",
+        subtitle: "Classification of urban and land-cover types based on built form and land cover",
         what:
-          "LCZs classify areas into types (e.g., compact high-rise, open low-rise, dense trees, water) using surface cover and urban structure. They enable more consistent comparisons between cities and neighborhoods.",
-        units: "Categorical classes (17 LCZ classes shown here as 1–17; official land-cover aliases A–G are retained in the legend).",
+          "Local Climate Zones, or LCZs, classify the city into standard urban and natural types based on built form and land cover. Unlike LST, SUHI, or the spectral index layers, this layer does not show one continuous physical measurement. Instead, it shows what kind of physical setting is present in each area. In simple terms, it helps describe whether a place is characterized by compact tall buildings, open low-rise neighborhoods, industrial land, trees, grass, bare ground, or water. This makes it easier to understand the physical character of different parts of the city in a consistent way.\n\nThis layer is useful because cities are not built in the same way everywhere. Some areas are compact and heavily built, while others are open, greener, or closer to natural land cover. LCZ helps organize these differences into a standardized classification system, so places with similar urban form or surface cover can be compared more clearly within the city and across different cities. In this dashboard, it provides important urban-form and land-cover context for interpreting spatial patterns together with the other layers.\n\nThe LCZ classes shown in this dashboard are listed below. These classes should be read as broad and standardized place types rather than exact descriptions of every local detail.",
+        units: "Categorical LCZ classes representing standardized urban and land-cover types.",
         interpret: [
-          "Built LCZ classes often show higher daytime LST than natural classes, but patterns vary by season and moisture.",
-          "Use LCZ to define ‘urban’ and ‘rural’ reference areas for SUHI calculations.",
-          "LCZ helps compare ‘like with like’ across different cities."
+          "Class 1 – Compact high-rise: dense clusters of tall buildings with very little open space",
+          "Class 2 – Compact mid-rise: dense areas of medium-height buildings close to one another",
+          "Class 3 – Compact low-rise: dense low-rise built-up areas with limited open space",
+          "Class 4 – Open high-rise: tall buildings with more spacing between them",
+          "Class 5 – Open mid-rise: medium-height buildings in a more open arrangement",
+          "Class 6 – Open low-rise: low-rise buildings with visible open land between them",
+          "Class 7 – Lightweight low-rise: low-rise built-up areas made mainly of lightweight materials",
+          "Class 8 – Large low-rise: large-footprint low-rise buildings such as warehouses, retail halls, or industrial units",
+          "Class 9 – Sparsely built: scattered buildings mixed with large amounts of open land or vegetation",
+          "Class 10 – Heavy industry: industrial zones with large structures, paved ground, and specialized land use",
+          "Class 11 – Dense trees: areas dominated by closely spaced tree cover",
+          "Class 12 – Scattered trees: areas with trees present but more spaced out",
+          "Class 13 – Bush, scrub: low woody vegetation and shrub-covered land",
+          "Class 14 – Low plants: grass, cropland, or other low vegetation cover",
+          "Class 15 – Bare rock or paved: exposed rock, hard surfaces, or strongly sealed ground with little vegetation",
+          "Class 16 – Bare soil or sand: loose natural ground with little or no vegetation cover",
+          "Class 17 – Water: rivers, lakes, canals, reservoirs, or other water bodies"
         ],
         limitations: [
-          "Quality depends on the input data, training/labeling, and mapping resolution.",
-          "Boundaries are generalized; mixed pixels and transitional areas are common.",
-          "LCZ describes typical structure/cover, not every micro-site condition."
+          "These maps should still be understood as generalized representations of city structure and land cover.",
+          "Real places can be mixed, transitional, or more complex than one single class.",
+          "The quality of the result also depends on the source data, mapping approach, and spatial resolution used to produce the LCZ dataset.",
+          "Because of this, the layer is best read as a broad and standardized description of place type rather than a perfect representation of every local detail."
         ],
-        refs: [
-          "Stewart & Oke (2012) – LCZ concept and definitions.",
-          "Demuzere et al. (2022) – Global LCZ dataset and class representation."
-        ]
+        refs: []
       },
 
       buildings3d: {
-        title: "3D Buildings",
-        subtitle: "3D representation of urban form (visual + analysis support)",
+        title: "3D Buildings (Urban Form Context)",
+        subtitle: "3D representation of urban form",
         what:
-          "3D buildings visualize the urban fabric and can support interpretation of heat patterns through urban geometry (height, density, street canyons), which influences shading, ventilation, and heat storage.",
-        units: "Geometry (meters for heights where available).",
-        interpret: [
-          "Dense and tall building areas can retain heat and reduce nighttime cooling, but may also create daytime shade depending on geometry.",
-          "Use 3D context to interpret hotspots and the role of morphology.",
-          "When attributes exist, morphometrics (height, floor area, sky view factor proxies) can be derived."
-        ],
-        limitations: [
-          "Visual 3D does not automatically mean accurate physical parameters; height/roof details depend on the source dataset.",
-          "Terrain and vertical datum mismatches can cause offsets if not handled consistently.",
-          "Urban climate effects depend on more than buildings alone (materials, vegetation, moisture, wind)."
-        ],
-        refs: [
-          "Oke et al. (2017) – Urban Climate concepts and the role of urban form (overview)."
-        ]
+          "The 3D Buildings layer shows the shape and height of buildings across the city. It helps the user see how built-up areas are arranged in space, rather than showing temperature directly. In this dashboard, the building data was provided by the municipalities themselves and is available in Level of Detail 2 (LoD2). In simple terms, this means the buildings are shown in a more realistic 3D form than simple blocks, with roof shapes and building structure represented in more detail. Where height information is available, it is generally expressed in metres.\n\nThis layer is useful because the shape of the city can influence how heat behaves. Tall buildings, dense building clusters, and narrow streets between buildings can affect how much sunlight reaches the ground, how easily air can move, and how heat is stored and released. For example, closely spaced tall buildings can create more shade during the day, but they can also reduce ventilation and slow cooling later in the day or at night. In this way, the 3D Buildings layer helps give physical context to the heat patterns seen in LST, SUHI, and the other environmental layers.\n\nHowever, this layer should not be read as a heat map by itself. It shows urban form, not surface temperature. A place with tall or dense buildings is not automatically hotter in every situation, because urban heat also depends on vegetation, materials, moisture, water, and local airflow. The 3D view is therefore best used together with the other layers in the dashboard to better understand why some parts of the city may appear hotter or cooler than others.\n\nThe building data is served in the dashboard through Cesium ion. The municipality-provided LoD2 dataset was uploaded there, tiled for web visualization, and then displayed here as 3D city data within Cesium. This makes it possible to view complex building models smoothly in the browser. For more detailed information about the buildings themselves, the respective municipalities can be consulted, since they are the original data providers.",
+        units: "Geometry; where height information is available, it is generally expressed in metres.",
+        interpret: [],
+        limitations: [],
+        refs: []
       }
     };
 
@@ -4277,6 +4502,7 @@
           if (cb.checked) markRasterPriority(key);
         } else if (key === "buildings3d") {
           buildingsEnabled = cb.checked;
+          updateBuildingOpacityControlVisibility(cb.checked);
           void updateBuildingsVisibility().catch(console.error);
         } else if (key === "hotspots" || key === "hotspots_hot" || key === "hotspots_cold") {
           updateHotspotSubLayerGroup();
@@ -4294,6 +4520,7 @@
 
           if (key === "buildings3d") {
             buildingsEnabled = on;
+            updateBuildingOpacityControlVisibility(on);
             void updateBuildingsVisibility().catch(console.error);
             renderLegend();
             return;
@@ -4407,6 +4634,7 @@
       createClickMarkerControls();
       createOpacityControls();
       createHotspotOpacityControl();
+      createBuildingOpacityControl();
       wireLayerSwitches();
       renderLegend();
 
@@ -4437,6 +4665,10 @@
         siteLogo.src = (theme === "dark")
           ? "./assets/logo_2.png"
           : "./assets/logo.png";
+      }
+
+      if (buildingTilesets.size) {
+        applyBuildingAppearance();
       }
     }
 
